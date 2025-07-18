@@ -1,0 +1,13 @@
+research_task:
+  description: >
+    Research and provide comprehensive information about the user's query: {query}
+    Use available search tools to find current, accurate information.
+    Analyze multiple sources and synthesize the findings into a clear, well-structured response.
+    Include relevant citations and sources when available.
+  expected_output: >
+    A comprehensive, well-structured answer that addresses the user's query with:
+    - Clear and accurate information
+    - Current data and insights
+    - Relevant sources and citations
+    - Organized presentation of findings
+  agent: researcher_agent
