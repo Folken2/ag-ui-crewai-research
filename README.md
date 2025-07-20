@@ -1,4 +1,4 @@
-# CrewAI - Real-Time Research Assistant
+# AG-UI CrewAI Real-Time Research Assistant
 
 A Perplexity-like AI research assistant built with **CrewAI**, **AG-UI Protocol**, and **Next.js**. Features real-time event streaming, web search capabilities, and a modern chat interface with source citations and images.
 
