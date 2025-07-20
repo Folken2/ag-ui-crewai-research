@@ -22,6 +22,7 @@ from .listeners.real_time_listener import real_time_listener
 
 
 from .main import ChatState
+
 from .utils.chat_helpers import (
     detect_intent,
     generate_chat_reply,

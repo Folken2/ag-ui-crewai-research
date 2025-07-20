@@ -1,5 +1,5 @@
 [project]
-name = "chatbot"
+name = "chat"
 version = "0.1.0"
 description = "Perplexity-like search chatbot using CrewAI"
 authors = [{ name = "Your Name", email = "you@example.com" }]
@@ -13,9 +13,9 @@ dependencies = [
 ]
 
 [project.scripts]
-kickoff = "chatbot.main:kickoff"
-run_crew = "chatbot.main:kickoff"
-plot = "chatbot.main:plot"
+kickoff = "chat.main:kickoff"
+run_crew = "chat.main:kickoff"
+plot = "chat.main:plot"
 
 [build-system]
 requires = ["hatchling"]
