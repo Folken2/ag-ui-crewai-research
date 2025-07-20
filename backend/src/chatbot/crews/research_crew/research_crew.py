@@ -3,30 +3,30 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from crewai_tools import SerperDevTool, EXASearchTool
-import time
+from crewai_tools import SerperDevTool
 
 # Import listeners to register event handlers
 from ...listeners import real_time_listener
 
-# If you want to run a snippet of code before or after the crew starts,
-# you can use the @before_kickoff and @after_kickoff decorators
-# https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
-
-## Time
-current_time = time.strftime("%Y-%m-%d %H:%M:%S")
 
 ## TOOLS
-serper_tool = SerperDevTool()
+# Configure SerperDevTool with both search and news modes for comprehensive results
+serper_search_tool = SerperDevTool(search_type="search")
+serper_news_tool = SerperDevTool(search_type="news")
 
 ## PYDANTIC MODELS
+class SourceInfo(BaseModel):
+    url: str = Field(description="The source URL")
+    title: Optional[str] = Field(description="The title of the source")
+    image_url: Optional[str] = Field(description="Image URL associated with the source")
+    snippet: Optional[str] = Field(description="Brief snippet or description")
+
 class ResearchResult(BaseModel):
     summary: Optional[str] = Field(description="A concise summary of the research result")
-    sources: Optional[List[str]] = Field(description="A list of sources used to gather the information")
+    sources: Optional[List[SourceInfo]] = Field(description="A list of sources with metadata including images")
     citations: Optional[List[str]] = Field(description="A list of citations for the sources used")
     
    
-
 @CrewBase
 class ResearchCrew:
     """Research Crew"""
@@ -42,7 +42,8 @@ class ResearchCrew:
     def researcher_agent(self) -> Agent:
         return Agent(
             config=self.agents_config["researcher_agent"],
-            tools=[serper_tool],
+            tools=[serper_news_tool],
+            #reasoning=True,
             verbose=True,
             inject_date=True,
         )

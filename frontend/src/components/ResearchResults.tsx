@@ -1,14 +1,21 @@
+interface Source {
+  url: string
+  title?: string
+  image_url?: string
+  snippet?: string
+}
+
 interface ResearchResultsProps {
   results?: {
     summary: string
-    sources: string[]
+    sources: Source[]
     citations: string[]
   }
   conversations?: Array<{
     input: string
     response: string
     type: "chat" | "research_enhanced"
-    sources?: string[]
+    sources?: Source[]
   }>
 }
 
@@ -57,59 +64,84 @@ export function ResearchResults({ results, conversations }: ResearchResultsProps
             </div>
           </div>
 
-          {/* Sources Section */}
+          {/* Enhanced Sources Section */}
           {results.sources && results.sources.length > 0 && (
             <div className="glass-card p-8 rounded-2xl border hover:border-gray-300 transition-all duration-300 hover:scale-[1.01]">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">
+                    Sources
+                  </h3>
+                  <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                    {results.sources.length} found
+                  </span>
                 </div>
-                <h3 className="text-xl font-bold text-foreground">
-                  Sources ({results.sources.length})
-                </h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                 {results.sources.map((source, index) => (
-                  <div key={index} className="group glass-card p-5 rounded-xl border hover:border-amber-300 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg flex flex-col h-full">
-                    {/* Header with number badge */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-lg">
-                        {index + 1}
+                  <a
+                    key={index}
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative overflow-hidden glass-card hover:shadow-lg p-4 rounded-xl border border-border/50 hover:border-amber-300/50 transition-all duration-300 hover:scale-[1.02] block"
+                  >
+
+                    
+                    {/* Content */}
+                    <div className="space-y-2">
+                      {/* Image if available */}
+                      {source.image_url && (
+                        <div className="relative w-full h-16 mb-2 rounded-lg overflow-hidden">
+                          <img
+                            src={source.image_url}
+                            alt={source.title || 'Source image'}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              // Hide image on error
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                          {/* Image overlay for better text readability */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                        </div>
+                      )}
+                      
+                      {/* Source name/publisher on top (like Perplexity) */}
+                      <div className="text-xs text-muted-foreground font-medium">
+                        {new URL(source.url).hostname.replace(/^www\./, '')}
                       </div>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
+                      
+                      {/* Title below source name */}
+                      <div className="text-sm font-semibold text-foreground group-hover:text-amber-600 line-clamp-2 leading-tight transition-colors pr-6">
+                        {source.title || new URL(source.url).hostname}
+                      </div>
+                      
+                      {/* Snippet if available */}
+                      {source.snippet && (
+                        <div className="text-xs text-muted-foreground line-clamp-2 leading-tight">
+                          {source.snippet}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-center">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-muted-foreground font-medium">
+                            Verified source
+                          </span>
+                        </div>
                       </div>
                     </div>
                     
-                    {/* URL content */}
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div className="mb-4">
-                        <p className="text-xs text-muted-foreground font-medium mb-2 uppercase tracking-wide">
-                          Source Link
-                        </p>
-                        <p className="text-sm font-medium text-foreground break-words leading-relaxed line-clamp-3">
-                          {new URL(source).hostname}
-                        </p>
-                      </div>
-                      
-                      {/* Full URL at bottom */}
-                      <a 
-                        href={source} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center space-x-2 text-xs text-amber-600 hover:text-amber-700 transition-colors font-medium group/link"
-                      >
-                        <span className="truncate">View source</span>
-                        <svg className="w-3 h-3 group-hover/link:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                    </div>
-                  </div>
+                    {/* Hover effect overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
+                  </a>
                 ))}
               </div>
             </div>

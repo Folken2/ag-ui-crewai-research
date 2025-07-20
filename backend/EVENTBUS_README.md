@@ -120,7 +120,7 @@ interface StreamEvent {
 - `CREW_STARTED` → "🚀 Starting Research Crew..."
 - `AGENT_STARTED` → "🤖 Expert Research Assistant is starting execution..."
 - `TOOL_STARTED` → "🔍 Using SerperDevTool with query: 'search terms'"
-- `LLM_STARTED` → "🧠 Calling gpt-4o-mini..."
+- `LLM_STARTED` → "🧠 Calling Llama 3.1 70B..."
 - `TOOL_COMPLETED` → "✅ SerperDevTool completed in 2.34s"
 - `AGENT_COMPLETED` → "✅ Expert Research Assistant completed execution"
 - `CREW_COMPLETED` → "✅ Research Crew completed successfully"

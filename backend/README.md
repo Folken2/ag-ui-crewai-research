@@ -14,7 +14,7 @@ A CrewAI-powered search assistant that provides up-to-date information with foll
 ## Prerequisites
 
 - Python 3.10+ (and <3.14)
-- OpenAI API key
+- Groq API key
 - Serper API key (for web search)
 
 ## Setup
@@ -34,8 +34,8 @@ crewai install
 Create a `.env` file in the project root with your API keys:
 
 ```env
-# OpenAI API Key (required)
-OPENAI_API_KEY=your_openai_api_key_here
+# Groq API Key (required)
+GROQ_API_KEY=your_groq_api_key_here
 
 # Serper API Key (required for web search)
 # Get your free API key at: https://serper.dev/
@@ -44,9 +44,10 @@ SERPER_API_KEY=your_serper_api_key_here
 
 **Getting API Keys:**
 
-1. **OpenAI API Key**: 
-   - Visit [OpenAI API](https://platform.openai.com/api-keys)
+1. **Groq API Key**: 
+   - Visit [Groq Console](https://console.groq.com/)
    - Create an account and generate an API key
+   - Groq offers fast inference with Llama models
 
 2. **Serper API Key**:
    - Visit [Serper.dev](https://serper.dev/)
@@ -90,7 +91,7 @@ Ask me anything and I'll search for the latest information.
 Based on my search of current information, here are the key AI developments in 2024:
 
 **Major Breakthroughs:**
-- OpenAI's GPT-4 Turbo with improved multimodal capabilities
+- Groq's Llama 3.1 70B with fast inference capabilities
 - Google's Gemini Ultra achieving human-level performance on MMLU
 - Meta's Code Llama for advanced programming assistance
 - Anthropic's Claude 3 with enhanced reasoning abilities
@@ -182,7 +183,7 @@ tools = [SerperDevTool(), ScrapeWebsiteTool(), YoutubeChannelSearchTool()]
 
 **Common Issues:**
 
-1. **Missing API Keys**: Ensure both OPENAI_API_KEY and SERPER_API_KEY are set in `.env`
+1. **Missing API Keys**: Ensure both GROQ_API_KEY and SERPER_API_KEY are set in `.env`
 2. **Import Errors**: Run `crewai install` to install dependencies
 3. **Search Failures**: Check your Serper API key and quota
 4. **Slow Responses**: Normal for comprehensive search and analysis

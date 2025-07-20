@@ -1,40 +1,15 @@
-import time
 from typing import List, Dict, Any, Tuple
 from litellm import completion
 
-from .prompts import INTENT_CLASSIFIER, CHAT_SYSTEM, SYNTHESIS_SYSTEM, UNIFIED_FLOW_PROMPT, inject_current_time
+from .prompts import INTENT_CLASSIFIER, CHAT_SYSTEM, UNIFIED_FLOW_PROMPT, inject_current_time
 
-
-def display_header() -> None:
-    print("\n" + "=" * 60)
-    print("💭 CHAT WITH ME!")
-    print("=" * 60)
-
-
-def display_sources(sources: List[str]) -> None:
-    if not sources:
-        return
-    print(f"\n{'='*60}\n📚 Sources & References:\n{'='*60}")
-    for i, src in enumerate(sources, 1):
-        if src:
-            print(f"[{i}] {src}")
-    print(f"{'='*60}")
-
-
-def get_user_input() -> str | None:
-    time.sleep(0.5)
-    text = input("\n💬 You: ").strip()
-    if not text:
-        print("❌ Please say something!")
-        return None
-    return text
 
 
 def detect_intent(text: str) -> str:
     """Return SEARCH, CHAT, or EXIT (default CHAT on error)."""
     try:
         resp = completion(
-            model="openai/gpt-4o",
+            model="gemini/gemini-2.0-flash",
             messages=[
                 {"role": "system", "content": INTENT_CLASSIFIER},
                 {"role": "user", "content": text},
@@ -50,27 +25,28 @@ def detect_intent(text: str) -> str:
 def synthesise_research(
     current_input: str, research: Dict[str, Any], temperature: float = 0.7
 ) -> str:
-    """Return a conversational answer built from research results."""
+    """Return a formatted answer built from research results, letting the LLM decide on formatting."""
+    prompt = f"""
+You are an expert research assistant. Create a clean, informative response based on the research summary, sources and citations.
+
+Research Summary:
+{research.get('summary', '')}
+
+Sources:
+{research.get('sources', [])}
+
+Citations:
+{research.get('citations', [])}
+
+User Question: {current_input}
+
+Format your response as clean markdown with proper headers, bullet points, and emphasis. Do not include any source references or URLs.
+"""
     resp = completion(
-        model="openai/gpt-4o",
+        model="gemini/gemini-2.0-flash",
         messages=[
-            {"role": "system", "content": SYNTHESIS_SYSTEM},
-            {"role": "user", "content": f"User asked: {current_input}"},
-            {
-                "role": "assistant",
-                "content": (
-                    "Here is the raw summary I found:\n\n"
-                    f"{research.get('summary', '')}"
-                ),
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"Sources: {research.get('sources', [])}\n"
-                    f"Citations: {research.get('citations', [])}\n\n"
-                    "Please present this information naturally."
-                ),
-            },
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": f"Format this research into a professional response: {current_input}"},
         ],
         temperature=temperature,
     )
@@ -85,7 +61,7 @@ def generate_chat_reply(history: List[Dict[str, str]], user_input: str) -> str:
         messages.append({"role": "assistant", "content": turn["response"]})
     messages.append({"role": "user", "content": user_input})
 
-    resp = completion(model="openai/gpt-4o", messages=messages, temperature=0.7)
+    resp = completion(model="gemini/gemini-2.0-flash", messages=messages, temperature=0.7)
     return resp.choices[0].message.content
 
 
@@ -113,7 +89,7 @@ def unified_llm_call(conversation_history: List[Dict[str, str]], user_input: str
     
     try:
         resp = completion(
-            model="openai/gpt-4o",
+            model="gemini/gemini-2.0-flash",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"{context}\n\nUser's current message: {user_input}"},

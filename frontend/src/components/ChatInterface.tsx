@@ -4,12 +4,12 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
-import { ExecutionTracker } from './ExecutionTracker'
 
 interface Source {
   url: string
   title: string
-  index: number
+  image_url?: string
+  snippet?: string
 }
 
 interface Message {
@@ -24,7 +24,7 @@ interface Message {
 interface ChatState {
   processing: boolean
   currentAction: string
-  conversationHistory: any[]
+  conversationHistory: unknown[]
   sessionEnded?: boolean
   lastEventUpdate?: number
 }
@@ -48,7 +48,6 @@ interface ExecutionEvent {
   }
   timestamp: string
   agent_id?: string
-  task_id?: string
   session_id?: string
 }
 
@@ -62,13 +61,7 @@ const getSafeUrl = (url: string) => {
   }
 }
 
-const getSafeHostname = (url: string) => {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return url || 'Unknown source';
-  }
-}
+
 
 const isValidUrl = (url: string) => {
   try {
@@ -79,50 +72,19 @@ const isValidUrl = (url: string) => {
   }
 }
 
-// Function to preprocess markdown content
-const preprocessMarkdown = (content: string): string => {
-  if (!content) return content;
-  
-  // Check if content looks like a simple paragraph (no clear structure)
-  const isSimpleParagraph = !content.includes(':') && 
-                           !content.match(/^[-•]\s/gm) && 
-                           !content.match(/^\d+\.\s/gm) &&
-                           content.split('\n').length < 4;
-  
-  if (isSimpleParagraph) {
-    // For simple paragraphs, just clean up basic formatting
-    return content
-      .replace(/\\n/g, '\n')
-      .replace(/\*\*(.+?)\*\*/g, '**$1**')
-      .replace(/\*(.+?)\*/g, '*$1*')
-      .trim();
+const extractDomain = (url: string) => {
+  try {
+    const domain = new URL(url).hostname;
+    // Remove www. if present
+    return domain.replace(/^www\./, '');
+  } catch {
+    return 'Source';
   }
-  
-  // For structured content, apply full processing
-  return content
-    // Convert literal \n to actual newlines
-    .replace(/\\n/g, '\n')
-    // Handle section headers (text ending with colon on its own line)
-    .replace(/^([^:\n]+):\s*$/gm, '## $1')
-    // Handle conclusion/summary sections
-    .replace(/^(Conclusion|Summary|Note):\s*(.+)$/gm, '## $1\n$2')
-    // Ensure bullet points are properly formatted with markdown syntax
-    .replace(/^- /gm, '- ')
-    // Convert bullet symbols to markdown list format
-    .replace(/^• /gm, '- ')
-    // Handle numbered lists
-    .replace(/^(\d+)\./gm, '$1. ')
-    // Clean up any double newlines but preserve intentional spacing
-    .replace(/\n\n+/g, '\n\n')
-    // Ensure proper spacing around headers
-    .replace(/^(#+\s)/gm, '\n$1')
-    // Handle bold text
-    .replace(/\*\*(.+?)\*\*/g, '**$1**')
-    // Handle italic text
-    .replace(/\*(.+?)\*/g, '*$1*')
-    // Trim whitespace and ensure we start clean
-    .trim();
 }
+
+
+
+
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -149,6 +111,12 @@ export function ChatInterface() {
     scrollToBottom()
   }, [messages])
 
+  const handleNewChat = useCallback(() => {
+    if (messages.length > 0) {
+      setShowClearDialog(true)
+    }
+  }, [messages.length])
+
   // Keyboard shortcut for new chat (Ctrl+N or Cmd+N)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -164,7 +132,7 @@ export function ChatInterface() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [showClearDialog, messages.length])
+  }, [showClearDialog, messages.length, handleNewChat])
 
   const clearChat = () => {
     setMessages([])
@@ -178,12 +146,6 @@ export function ChatInterface() {
       lastEventUpdate: Date.now()
     })
     setShowClearDialog(false)
-  }
-
-  const handleNewChat = () => {
-    if (messages.length > 0) {
-      setShowClearDialog(true)
-    }
   }
 
   const handleSSEMessage = useCallback((event: MessageEvent) => {
@@ -370,7 +332,7 @@ export function ChatInterface() {
               <h1 className="text-xl font-bold text-foreground">
                 AI Research Assistant
               </h1>
-              <p className="text-sm text-muted-foreground">CrewAI Flows + AG-UI Protocol Implementation</p>
+              <p className="text-sm text-muted-foreground">CrewAI + AG-UI Protocol Implementation</p>
             </div>
           </div>
 
@@ -398,11 +360,11 @@ export function ChatInterface() {
             <div className="text-center max-w-6xl mx-auto">
               <div className="mb-12 animate-fade-in">
                 <h2 className="text-5xl font-bold text-foreground mb-4">
-                  Advanced AI Research Assistant
+                  AI Research Assistant
                 </h2>
                 <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8">
-                  A cutting-edge implementation showcasing <span className="font-semibold text-foreground">CrewAI Flows</span> for 
-                  orchestrated AI workflows and <span className="font-semibold text-foreground">AG-UI Protocol</span> for 
+                  A cutting-edge implementation showcasing <span className="font-semibold text-foreground">CrewAI</span> for 
+                  orchestrated AI agents and <span className="font-semibold text-foreground">AG-UI Protocol</span> for 
                   real-time streaming interactions.
                 </p>
                 
@@ -416,7 +378,7 @@ export function ChatInterface() {
                         <rect x="15" y="15" width="6" height="6" rx="1" strokeWidth={2}/>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v6M9 15l3-3M15 15l-3-3"/>
                       </svg>
-                      <span className="text-base font-semibold text-foreground">CrewAI Flows</span>
+                      <span className="text-base font-semibold text-foreground">CrewAI</span>
                     </div>
                   </div>
                   <div className="glass-card px-5 py-3 rounded-full border border-amber-200">
@@ -475,39 +437,77 @@ export function ChatInterface() {
                     : 'glass-card rounded-bl-md'
                 }`}>
                   <div className="px-4 py-2">
-                    {/* Sources at the top (Perplexity style) */}
+                    {/* Enhanced Sources Display */}
                     {message.role === 'assistant' && !message.isSearching && message.content && message.sources && message.sources.length > 0 && (
-                      <div className="mb-3 pb-3 border-b border-border">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                          {message.sources.map((source) => (
+                      <div className="mb-4 pb-4 border-b border-border/50">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-5 h-5 bg-amber-500 rounded-md flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                              </svg>
+                            </div>
+                            <span className="text-sm font-semibold text-foreground">Sources</span>
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                              {message.sources.length} found
+                            </span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                          {message.sources.map((source, index) => (
                             <a
-                              key={source.index}
+                              key={`${source.url}-${index}`}
                               href={getSafeUrl(source.url)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="group glass-card hover:bg-muted p-3 rounded-lg transition-all duration-200 border block"
+                              className="group relative overflow-hidden glass-card hover:shadow-lg p-4 rounded-xl border border-border/50 hover:border-amber-300/50 transition-all duration-300 hover:scale-[1.02] block"
                               onClick={(e) => {
                                 if (!isValidUrl(source.url)) {
                                   e.preventDefault();
                                 }
                               }}
                             >
-                              <div className="flex items-start space-x-3">
-                                <div className="w-6 h-6 bg-amber-400 rounded-md flex items-center justify-center text-white font-bold text-sm shrink-0">
-                                  {source.index}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-foreground group-hover:text-amber-500 line-clamp-2 leading-relaxed">
-                                    {source.title}
+
+                              
+                              {/* Content */}
+                              <div className="space-y-2">
+                                {/* Image if available */}
+                                {source.image_url && (
+                                  <div className="relative w-full h-16 mb-2 rounded-lg overflow-hidden">
+                                    <img
+                                      src={source.image_url}
+                                      alt={source.title}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                      onError={(e) => {
+                                        // Hide image on error
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                    {/* Image overlay for better text readability */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                                   </div>
-                                  <div className="flex items-center mt-1 text-xs text-muted-foreground">
-                                    <span className="truncate">{getSafeHostname(source.url)}</span>
-                                    <svg className="w-3 h-3 ml-1 group-hover:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                    </svg>
-                                  </div>
+                                )}
+                                
+                                {/* Source name/publisher on top (like Perplexity) */}
+                                <div className="text-xs text-muted-foreground font-medium">
+                                  {extractDomain(source.url)}
                                 </div>
+                                
+                                {/* Title below source name */}
+                                <div className="text-sm font-semibold text-foreground group-hover:text-amber-600 line-clamp-2 leading-tight transition-colors pr-6">
+                                  {source.title}
+                                </div>
+                                
+                                {/* Snippet if available */}
+                                {source.snippet && (
+                                  <div className="text-xs text-muted-foreground line-clamp-2 leading-tight">
+                                    {source.snippet}
+                                  </div>
+                                )}
                               </div>
+                              
+                              {/* Hover effect overlay */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
                             </a>
                           ))}
                         </div>
@@ -520,7 +520,7 @@ export function ChatInterface() {
                         {executionEvents.length > 0 ? (
                           executionEvents.slice(-3).map((event, eventIndex) => (
                             <div
-                              key={`${event.type}-${event.timestamp}-${event.agent_id || event.task_id || eventIndex}`}
+                              key={`${event.type}-${event.timestamp}-${event.agent_id || eventIndex}`}
                               className="flex items-center space-x-3 text-sm animate-fade-in"
                               style={{ animationDelay: `${eventIndex * 200}ms` }}
                             >
@@ -541,38 +541,72 @@ export function ChatInterface() {
                       </div>
                     )}
 
-                    {/* Regular message content */}
+                    {/* Enhanced message content */}
                     {message.content && (
-                      <div className="prose prose-sm max-w-none text-foreground leading-relaxed">
+                      <div className="max-w-none text-foreground leading-relaxed">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           rehypePlugins={[rehypeRaw]}
                           components={{
-                            h1: ({children}) => <h1 className="text-xl font-bold text-foreground mb-3 mt-4 first:mt-0">{children}</h1>,
-                            h2: ({children}) => <h2 className="text-lg font-semibold text-foreground mb-2 mt-3 first:mt-0">{children}</h2>,
-                            h3: ({children}) => <h3 className="text-base font-medium text-foreground mb-2 mt-3 first:mt-0">{children}</h3>,
-                            p: ({children}) => <p className="text-foreground mb-3 last:mb-0 leading-relaxed">{children}</p>,
-                            ul: ({children}) => <ul className="list-none space-y-2 mb-3 last:mb-0">{children}</ul>,
-                            ol: ({children}) => <ol className="list-decimal list-inside space-y-2 mb-3 last:mb-0 ml-4">{children}</ol>,
-                            li: ({children}) => <li className="text-foreground leading-relaxed flex items-start"><span className="text-amber-500 mr-2 mt-1 flex-shrink-0">•</span><span>{children}</span></li>,
+                            h1: ({children}) => <h1 className="text-xl font-bold text-foreground mb-4 mt-6 first:mt-0 border-b border-gray-300 pb-2">{children}</h1>,
+                            h2: ({children}) => <h2 className="text-lg font-semibold text-foreground mb-3 mt-5 first:mt-0">{children}</h2>,
+                            h3: ({children}) => <h3 className="text-base font-medium text-foreground mb-2 mt-4 first:mt-0">{children}</h3>,
+                            p: ({children}) => <p className="text-foreground mb-4 last:mb-0 leading-relaxed text-[15px]">{children}</p>,
+                            ul: ({children}) => <ul className="list-none space-y-2 mb-4 last:mb-0">{children}</ul>,
+                            ol: ({children}) => <ol className="list-decimal list-inside space-y-2 mb-4 last:mb-0 ml-4">{children}</ol>,
+                            li: ({children}) => (
+                              <li className="text-foreground leading-relaxed flex items-start text-[15px] mb-2">
+                                <span className="text-gray-500 mr-3 mt-2 flex-shrink-0 w-2 h-2 rounded-full bg-gray-500"></span>
+                                <span className="flex-1">{children}</span>
+                              </li>
+                            ),
                             strong: ({children}) => <strong className="font-semibold text-foreground">{children}</strong>,
-                            em: ({children}) => <em className="italic text-foreground">{children}</em>,
-                            code: ({children}) => <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-foreground">{children}</code>,
-                            pre: ({children}) => <pre className="bg-muted p-3 rounded-md overflow-x-auto text-sm font-mono text-foreground mb-3">{children}</pre>,
-                            blockquote: ({children}) => <blockquote className="border-l-4 border-amber-400 pl-4 italic text-muted-foreground mb-3">{children}</blockquote>,
+                            em: ({children}) => <em className="italic text-foreground text-muted-foreground">{children}</em>,
+                            code: ({children}) => <code className="bg-muted px-2 py-1 rounded-md text-sm font-mono text-foreground border border-border/50">{children}</code>,
+                            pre: ({children}) => <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm font-mono text-foreground mb-4 border border-border/50 shadow-sm">{children}</pre>,
+                            blockquote: ({children}) => (
+                              <blockquote className="border-l-4 border-gray-300 pl-4 italic text-muted-foreground mb-4 bg-gray-50 dark:bg-gray-900/10 py-3 rounded-r-lg">
+                                {children}
+                              </blockquote>
+                            ),
                             a: ({href, children}) => (
                               <a 
                                 href={href} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="text-amber-500 hover:text-amber-600 underline font-medium"
+                                className="text-foreground underline font-medium hover:no-underline hover:bg-gray-100 dark:hover:bg-gray-800 px-1 rounded transition-colors"
                               >
                                 {children}
                               </a>
                             ),
+                            // Handle tables
+                            table: ({children}) => (
+                              <div className="overflow-x-auto my-4">
+                                <table className="min-w-full border border-border rounded-lg overflow-hidden">
+                                  {children}
+                                </table>
+                              </div>
+                            ),
+                            th: ({children}) => (
+                              <th className="bg-muted px-4 py-2 text-left font-semibold text-foreground border-b border-border">
+                                {children}
+                              </th>
+                            ),
+                            td: ({children}) => (
+                              <td className="px-4 py-2 text-foreground border-b border-border">
+                                {children}
+                              </td>
+                            ),
+                            // Handle horizontal rules
+                            hr: () => (
+                              <hr className="my-6 border-t border-border" />
+                            ),
+                            // Handle h4 headers
+                            h4: ({children}) => <h4 className="text-sm font-medium text-foreground mb-2 mt-3 first:mt-0">{children}</h4>,
+                            
                           }}
                         >
-                          {message.content}
+                          {message.content.replace(/##\s*##/g, '##')}
                         </ReactMarkdown>
                       </div>
                     )}
@@ -586,7 +620,7 @@ export function ChatInterface() {
               <div className="max-w-6xl mx-auto px-6 py-3 space-y-2">
                 {eventMessages.map((message, index) => (
                   <div 
-                    key={`${eventMessageId}-${index}`}
+                    key={`event-${eventMessageId}-${index}-${message.substring(0, 20)}`}
                     className={`flex items-center space-x-3 text-sm animate-fade-in ${
                       index === eventMessages.length - 1 
                         ? 'text-amber-600 font-semibold' 
@@ -615,7 +649,7 @@ export function ChatInterface() {
               <div className="max-w-6xl mx-auto px-6 py-3">
                 <div className="flex items-center space-x-3 text-sm text-muted-foreground">
                   <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="font-medium">Processing...</span>
+                  <span className="font-medium"></span>
                 </div>
               </div>
             )}

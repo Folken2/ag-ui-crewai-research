@@ -1,13 +1,36 @@
 research_task:
   description: >
     Research and provide comprehensive information about the user's query: {query}
-    Use available search tools to find current, accurate information.
+    Use both search and news tools to find current, accurate information.
+    
+    IMPORTANT: Use BOTH tools for comprehensive results:
+    1. Use the search tool for general information and knowledge graph data
+    2. Use the news tool for recent news articles which often contain image URLs
+    
+    CRITICAL: When calling the SerperDevTool, use the parameter name "search_query" (not "description").
+    Example: Use "search_query": "your search terms" when calling the tool.
+    
     Analyze multiple sources and synthesize the findings into a clear, well-structured response.
     Include relevant citations and sources when available.
+    
+    IMPORTANT: When creating your sources, extract image URLs from the raw search data.
+    The news results especially contain imageUrl fields that you should include in your SourceInfo objects.
+    
+    For each source, make sure to include:
+    - url: the source URL
+    - title: the source title  
+    - image_url: extract from imageUrl field in search results (if available)
+    - snippet: the source snippet
+    
+    Look for imageUrl fields in the organic search results, knowledge graph, and news results.
+    News results are particularly good for finding images.
   expected_output: >
     A comprehensive, well-structured answer that addresses the user's query with:
     - Clear and accurate information
     - Current data and insights
-    - Relevant sources and citations
+    - Relevant sources with metadata (URL, title, image URL, snippet)
     - Organized presentation of findings
+    - sources should be mapped to the information they provide in the response, when possible.
+    - Include image URLs from search results to provide visual context
+    - Combine results from both search and news tools for comprehensive coverage
   agent: researcher_agent

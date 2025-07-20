@@ -21,7 +21,6 @@ interface ExecutionEvent {
   }
   timestamp: string
   agent_id?: string
-  task_id?: string
   session_id?: string
 }
 
@@ -63,7 +62,7 @@ export function ExecutionTracker({ events, isProcessing }: ExecutionTrackerProps
     return null
   }
 
-  const getEventIcon = (type: string, status?: string) => {
+  const getEventIcon = (type: string) => {
     switch (type) {
       case "CREW_STARTED":
         return "🚀"
@@ -100,14 +99,14 @@ export function ExecutionTracker({ events, isProcessing }: ExecutionTrackerProps
     }
   }
 
-  const getEventColor = (type: string, status?: string) => {
-    if (status === "error" || status === "failed" || type.includes("ERROR") || type.includes("FAILED")) {
+  const getEventColor = (type: string) => {
+    if (type.includes("ERROR") || type.includes("FAILED")) {
       return "text-red-500 border-red-200 bg-red-50"
     }
-    if (status === "completed" || type.includes("COMPLETED")) {
+    if (type.includes("COMPLETED")) {
       return "text-green-600 border-green-200 bg-green-50"
     }
-    if (status === "executing" || type.includes("STARTED")) {
+    if (type.includes("STARTED")) {
       return "text-blue-600 border-blue-200 bg-blue-50 animate-pulse"
     }
     return "text-gray-600 border-gray-200 bg-gray-50"
@@ -143,12 +142,12 @@ export function ExecutionTracker({ events, isProcessing }: ExecutionTrackerProps
         <div className="space-y-2">
           {visibleEvents.map((event, index) => (
             <div
-              key={`${event.timestamp}-${index}`}
-              className={`flex items-start space-x-3 p-2 rounded-md border transition-all duration-300 transform ${getEventColor(event.type, event.data.status)} animate-in slide-in-from-left-2`}
+              key={`${event.type}-${event.timestamp}-${event.agent_id || 'no-agent'}-${index}`}
+              className={`flex items-start space-x-3 p-2 rounded-md border transition-all duration-300 transform ${getEventColor(event.type)} animate-in slide-in-from-left-2`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <span className="text-lg flex-shrink-0 mt-0.5">
-                {getEventIcon(event.type, event.data.status)}
+                {getEventIcon(event.type)}
               </span>
               
               <div className="flex-1 min-w-0">
@@ -189,7 +188,7 @@ export function ExecutionTracker({ events, isProcessing }: ExecutionTrackerProps
           {isProcessing && (
             <div className="flex items-center space-x-2 p-2 text-blue-600">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
-              <span className="text-sm font-medium">Processing...</span>
+              <span className="text-sm font-medium"></span>
             </div>
           )}
         </div>

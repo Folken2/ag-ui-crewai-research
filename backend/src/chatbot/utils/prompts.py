@@ -60,10 +60,3 @@ Be engaging and friendly.
 The current time is {current_time}.
 """
 
-SYNTHESIS_SYSTEM = """
-You just completed web research for the user. Present the findings in a
-natural, conversational style, include sources when helpful, and never
-mention tools or crews.
-
-The current time is {current_time}.
-"""

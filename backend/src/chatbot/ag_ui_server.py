@@ -20,10 +20,6 @@ from datetime import datetime
 # Import listeners to register them with the event bus
 from .listeners.real_time_listener import real_time_listener
 
-# --- Adaptation to new flow structure ---
-# We no longer rely on an external `create_chatbot` function provided by the flow.
-# Instead, we build a lightweight wrapper here that exposes the same public
-# interface (`process_message`, `is_session_active`, `get_conversation_history`).
 
 from .main import ChatState
 from .utils.chat_helpers import (
@@ -140,7 +136,7 @@ class AGUIFlowAdapter:
         self.flow = create_chatbot()
 
     def _format_research_content(self, content: str) -> str:
-        """Format research content with markdown-like formatting"""
+        """Format research content with clean, professional formatting"""
         if not content:
             return content
             
@@ -163,66 +159,27 @@ class AGUIFlowAdapter:
                 for bullet in bullets:
                     bullet = bullet.strip()
                     if bullet:
-                        # Bold the first part if it contains a colon
-                        if ':' in bullet:
-                            parts = bullet.split(':', 1)
-                            if len(parts) == 2:
-                                formatted_paragraphs.append(f"• **{parts[0].strip()}**: {parts[1].strip()}")
-                            else:
-                                formatted_paragraphs.append(f"• {bullet}")
-                        else:
-                            formatted_paragraphs.append(f"• {bullet}")
+                        formatted_paragraphs.append(f"• {bullet}")
                 continue
             
-            # Check for title patterns
-            if (len(paragraph) < 100 and 
-                any(word in paragraph.lower() for word in ['overview', 'summary', 'introduction', 'key', 'main', 'recent', 'latest', 'highlights', 'september', 'boston'])):
+            # Check for short paragraphs that might be headers
+            if (len(paragraph) < 80 and 
+                not paragraph.endswith('.') and 
+                not paragraph.endswith('!') and 
+                not paragraph.endswith('?') and
+                not paragraph.startswith('In ') and
+                not paragraph.startswith('The ') and
+                not paragraph.startswith('This ')):
                 formatted_paragraphs.append(f"## {paragraph}")
                 continue
             
-            # Handle sentences that should be bullet points
-            sentences = paragraph.split('. ')
-            if len(sentences) > 2 and not paragraph.startswith('In '):
-                bullet_list = []
-                for sentence in sentences:
-                    sentence = sentence.strip()
-                    if sentence and len(sentence) > 20:
-                        # Clean up the sentence
-                        if not sentence.endswith('.') and not sentence.endswith('!') and not sentence.endswith('?'):
-                            sentence += '.'
-                        
-                        # Bold key terms in each bullet
-                        sentence = self._emphasize_key_terms(sentence)
-                        bullet_list.append(f"• {sentence}")
-                        
-                if bullet_list:
-                    formatted_paragraphs.extend(bullet_list)
-                    continue
-            
-            # Regular paragraphs - add emphasis to key terms
-            emphasized = self._emphasize_key_terms(paragraph)
-            formatted_paragraphs.append(emphasized)
+            # Regular paragraphs - keep them clean
+            formatted_paragraphs.append(paragraph)
         
         return '\n\n'.join(formatted_paragraphs)
     
     def _emphasize_key_terms(self, text: str) -> str:
-        """Add bold emphasis to key terms in text"""
-        import re
-        
-        # Bold dates and years
-        text = re.sub(r'\b(2024|2025|January|February|March|April|May|June|July|August|September|October|November|December)\b', r'**\1**', text)
-        
-        # Bold percentages and numbers
-        text = re.sub(r'\b(\d+%|\$\d+[KMB]?|\d+\.\d+)\b', r'**\1**', text)
-        
-        # Bold place names and proper nouns
-        text = re.sub(r'\b(Boston|Freedom Trail|Fenway Park|Harvard|MIT)\b', r'**\1**', text)
-        
-        # Bold important keywords
-        keywords = ['highlights', 'features', 'includes', 'offers', 'hosts', 'excellent', 'popular', 'rich history', 'landmarks', 'attractions', 'festivals', 'events', 'concerts', 'outdoor activities']
-        for keyword in keywords:
-            text = re.sub(rf'\b({re.escape(keyword)})\b', r'**\1**', text, flags=re.IGNORECASE)
-        
+        """Simple emphasis for key terms - kept for compatibility"""
         return text
 
     async def process_message(self, user_message: str):
@@ -288,14 +245,28 @@ class AGUIFlowAdapter:
                     # Send sources if available
                     sources = result.get("sources", [])
                     if sources:
-                        yield self._create_event("SOURCES_UPDATE", {
-                            "sources": [
-                                {
+                        # Handle both old string format and new SourceInfo format
+                        formatted_sources = []
+                        for source in sources[:5]:
+                            if isinstance(source, str):
+                                # Old format - convert to new format
+                                formatted_sources.append({
                                     "url": source,
-                                    "title": self._extract_domain(source)
-                                }
-                                for source in sources[:5] if source
-                            ]
+                                    "title": self._extract_domain(source),
+                                    "image_url": None,
+                                    "snippet": None
+                                })
+                            elif hasattr(source, 'url'):
+                                # New SourceInfo format
+                                formatted_sources.append({
+                                    "url": source.url,
+                                    "title": source.title or self._extract_domain(source.url),
+                                    "image_url": getattr(source, 'image_url', None),
+                                    "snippet": getattr(source, 'snippet', None)
+                                })
+                        
+                        yield self._create_event("SOURCES_UPDATE", {
+                            "sources": formatted_sources
                         })
                 else:
                     # Regular chat response
@@ -341,8 +312,8 @@ class AGUIFlowAdapter:
         event_type_mapping = {
             "CREW_STARTED": "EXECUTION_STATUS",
             "CREW_COMPLETED": "EXECUTION_STATUS", 
-            "CREW_ERROR": "RUN_ERROR",
             "AGENT_STARTED": "AGENT_STATUS",
+            "AGENT_FINISHED": "AGENT_STATUS",
             "AGENT_COMPLETED": "AGENT_STATUS",
             "AGENT_ERROR": "AGENT_ERROR",
             "TASK_STARTED": "TASK_STATUS",
@@ -432,7 +403,7 @@ async def flow_status():
 async def get_pending_events():
     """Get any pending real-time events"""
     return {
-        "events": real_time_listener.get_events(),
+        "events": real_time_listener.get_events_realtime(),
         "session_status": real_time_listener.get_session_status()
     }
 
