@@ -74,14 +74,17 @@ RUN npm ci --only=production
 
 # Create startup script
 WORKDIR /app
+ENV BACKEND_URL=http://localhost:8000
+ENV PORT=3000
+ENV BACKEND_PORT=8000
 COPY <<EOF /app/start.sh
 #!/bin/bash
 set -e
 
 # Set environment variables for internal communication
-export BACKEND_URL=http://localhost:8000
-export PORT=\${PORT:-3000}
-export BACKEND_PORT=8000
+export BACKEND_URL=$BACKEND_URL
+export PORT=$PORT
+export BACKEND_PORT=$BACKEND_PORT
 
 echo "Starting CrewAI Flow services..."
 
