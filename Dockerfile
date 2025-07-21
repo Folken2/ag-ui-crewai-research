@@ -77,90 +77,11 @@ WORKDIR /app
 ENV BACKEND_URL=http://localhost:8000
 ENV PORT=3000
 ENV BACKEND_PORT=8000
-COPY <<EOF /app/start.sh
-#!/bin/bash
-set -e
-
-# Set environment variables for internal communication
-export BACKEND_URL=$BACKEND_URL
-export PORT=$PORT
-export BACKEND_PORT=$BACKEND_PORT
-
-echo "Starting CrewAI Flow services..."
-
-# Start backend in background
-echo "Starting backend on port \$BACKEND_PORT..."
-cd /app/backend/src/chatbot
-python ag_ui_server.py &
-BACKEND_PID=\$!
-
-# Wait for backend to be ready
-echo "Waiting for backend to be ready..."
-until curl -f http://localhost:\$BACKEND_PORT/health > /dev/null 2>&1; do
-    echo "Backend not ready yet, waiting..."
-    sleep 1
-done
-echo "Backend is ready!"
-
-# Start frontend
-echo "Starting frontend on port \$PORT..."
-cd /app/frontend
-npm start &
-FRONTEND_PID=\$!
-
-# Wait for frontend to be ready
-echo "Waiting for frontend to be ready..."
-until curl -f http://localhost:\$PORT > /dev/null 2>&1; do
-    echo "Frontend not ready yet, waiting..."
-    sleep 1
-done
-echo "Frontend is ready!"
-
-echo "All services started successfully!"
-echo "Frontend: http://localhost:\$PORT"
-echo "Backend: http://localhost:\$BACKEND_PORT"
-
-# Function to handle shutdown
-cleanup() {
-    echo "Shutting down services..."
-    kill \$FRONTEND_PID 2>/dev/null || true
-    kill \$BACKEND_PID 2>/dev/null || true
-    exit 0
-}
-
-# Set up signal handlers
-trap cleanup SIGTERM SIGINT
-
-# Keep the container running
-wait
-EOF
-
-# Make startup script executable
+COPY backend/start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
 # Create a simple health check script
-COPY <<EOF /app/healthcheck.sh
-#!/bin/bash
-# Health check for both services
-FRONTEND_PORT=\${PORT:-3000}
-BACKEND_PORT=8000
-
-# Check backend
-if ! curl -f http://localhost:\$BACKEND_PORT/health > /dev/null 2>&1; then
-    echo "Backend health check failed"
-    exit 1
-fi
-
-# Check frontend
-if ! curl -f http://localhost:\$FRONTEND_PORT > /dev/null 2>&1; then
-    echo "Frontend health check failed"
-    exit 1
-fi
-
-echo "All services healthy"
-exit 0
-EOF
-
+COPY backend/healthcheck.sh /app/healthcheck.sh
 RUN chmod +x /app/healthcheck.sh
 
 # Set working directory
