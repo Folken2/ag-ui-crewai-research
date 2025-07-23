@@ -1,20 +1,16 @@
-// next.config.ts
-import type { NextConfig } from 'next';
-
-const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone', // ← REQUIRED for smaller builds in Docker!
-
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: `${backendUrl}/api/:path*`,
+        destination: process.env.BACKEND_URL 
+          ? `${process.env.BACKEND_URL}/api/:path*`
+          : 'http://localhost:8000/api/:path*',
       },
     ];
   },
 };
 
 export default nextConfig;
-

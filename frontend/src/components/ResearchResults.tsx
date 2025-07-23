@@ -82,14 +82,14 @@ export function ResearchResults({ results, conversations }: ResearchResultsProps
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+              <div className="flex gap-3 overflow-x-auto pb-1 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-amber-300/30 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-amber-300/50">
                 {results.sources.map((source, index) => (
                   <a
                     key={index}
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group relative overflow-hidden glass-card hover:shadow-lg p-4 rounded-xl border border-border/50 hover:border-amber-300/50 transition-all duration-300 hover:scale-[1.02] block"
+                    className="group relative overflow-hidden glass-card hover:shadow-lg p-3 rounded-xl border border-border/50 hover:border-amber-300/50 transition-all duration-300 hover:scale-[1.02] block flex-shrink-0 w-60"
                   >
 
                     

@@ -248,7 +248,10 @@ export function ChatInterface() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ messages: [
+          ...messages.map(m => ({ role: m.role, content: m.content })),
+          { role: 'user', content: userMessage }
+        ] }),
       });
 
       if (!response.ok) {
@@ -454,14 +457,14 @@ export function ChatInterface() {
                             </span>
                           </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                        <div className="flex gap-3 overflow-x-auto pb-1 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-amber-300/30 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-amber-300/50">
                           {message.sources.map((source, index) => (
                             <a
                               key={`${source.url}-${index}`}
                               href={getSafeUrl(source.url)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="group relative overflow-hidden glass-card hover:shadow-lg p-4 rounded-xl border border-border/50 hover:border-amber-300/50 transition-all duration-300 hover:scale-[1.02] block"
+                              className="group relative overflow-hidden glass-card hover:shadow-lg p-3 rounded-xl border border-border/50 hover:border-amber-300/50 transition-all duration-300 hover:scale-[1.02] block flex-shrink-0 w-50"
                               onClick={(e) => {
                                 if (!isValidUrl(source.url)) {
                                   e.preventDefault();

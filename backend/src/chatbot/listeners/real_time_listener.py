@@ -46,7 +46,7 @@ class RealTimeListener(BaseEventListener):
             self._emit_event(StreamEvent(
                 type="CREW_STARTED",
                 data={
-                    "message": "🚀 Starting research...",
+                    "message": "Starting research...",
                     "status": "executing"
                 },
                 timestamp=datetime.now().isoformat(),
@@ -65,7 +65,7 @@ class RealTimeListener(BaseEventListener):
                     type="AGENT_STARTED",
                     data={
                         "agent_role": agent_role,
-                        "message": "🧠 Research agent thinking...",
+                        "message": "Research agent thinking...",
                         "status": "executing"
                     },
                     timestamp=datetime.now().isoformat(),
@@ -85,7 +85,7 @@ class RealTimeListener(BaseEventListener):
                     type="AGENT_FINISHED",
                     data={
                         "agent_role": agent_role,
-                        "message": "💭 Gathering final thoughts...",
+                        "message": "Gathering final thoughts...",
                         "status": "finished"
                     },
                     timestamp=datetime.now().isoformat(),
