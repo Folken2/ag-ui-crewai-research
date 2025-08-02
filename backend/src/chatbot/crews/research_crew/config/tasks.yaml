@@ -1,16 +1,26 @@
 research_task:
   description: >
-    Research and provide comprehensive information about the user's query: {query}
-    Use both search and news tools to find current, accurate information.
+    Research and provide comprehensive information about the user's query: {query}.
+    You have access to TWO different tools - choose the most appropriate one:
+
+    **ExaAnswerTool (exa_answer)**: Use for specific, factual questions that need quick, direct answers.
+    - Best for: "What is the capital of France?", "What is the latest SpaceX valuation?", "Who won the last World Cup?"
+    - Returns: Direct answer with citations
+    - Parameter: Use "query": "your question" when calling the tool
+
+    **ExaSearchTool (exa_web_search)**: Use for complex research, open-ended questions, or when you need multiple sources.
+    - Best for: "What is the state of AI in healthcare?", "How to cook eggs in air fryer?", "Latest developments in renewable energy"
+    - Returns: Multiple search results with detailed content
+    - Parameter: Use "query": "your search terms" when calling the tool
+
+    IMPORTANT: be fast! Users expect a professional response as fast as possible.
     
-    IMPORTANT: Use BOTH tools for comprehensive results:
-    1. Use the search tool for general information and knowledge graph data
-    2. Use the news tool for recent news articles which often contain image URLs
+    Choose the tool based on the query type:
+    - Simple factual questions → Use ExaAnswerTool
+    - Complex research topics → Use ExaSearchTool
+    - When in doubt, use ExaSearchTool for comprehensive coverage
     
-    CRITICAL: When calling the SerperDevTool, use the parameter name "search_query" (not "description").
-    Example: Use "search_query": "your search terms" when calling the tool.
-    
-    Analyze multiple sources and synthesize the findings into a clear, well-structured response.
+    Analyze the results and synthesize the findings into a clear, well-structured response.
     Include relevant citations and sources when available.
     
     IMPORTANT: When creating your sources, extract image URLs from the raw search data.

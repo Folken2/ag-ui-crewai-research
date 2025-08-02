@@ -4,12 +4,15 @@ from datetime import datetime
 import queue
 import threading
 import uuid
+import json
 
 from crewai.utilities.events import (
-    CrewKickoffStartedEvent,
     CrewKickoffCompletedEvent,
     AgentExecutionStartedEvent,
     AgentExecutionCompletedEvent,
+    ToolUsageStartedEvent,
+    ToolUsageFinishedEvent,
+    ToolUsageErrorEvent,
 )
 from crewai.utilities.events.base_event_listener import BaseEventListener
 
@@ -41,18 +44,6 @@ class RealTimeListener(BaseEventListener):
         
         # ==================== AGENT EVENTS ====================
         
-        @crewai_event_bus.on(CrewKickoffStartedEvent)
-        def on_crew_kickoff_started(source, event: CrewKickoffStartedEvent):
-            self._emit_event(StreamEvent(
-                type="CREW_STARTED",
-                data={
-                    "message": "Starting research...",
-                    "status": "executing"
-                },
-                timestamp=datetime.now().isoformat(),
-                session_id=self.session_id
-            ))
-
         @crewai_event_bus.on(AgentExecutionStartedEvent)
         def on_agent_execution_started(source, event: AgentExecutionStartedEvent):
             agent = getattr(event, 'agent', None)
@@ -92,6 +83,154 @@ class RealTimeListener(BaseEventListener):
                     agent_id=agent_id,
                     session_id=self.session_id
                 ))
+
+        # ==================== TOOL USAGE EVENTS ====================
+        
+        @crewai_event_bus.on(ToolUsageStartedEvent)
+        def on_tool_usage_started(source, event: ToolUsageStartedEvent):
+            """Capture when a tool starts executing, including the input query"""
+            agent = getattr(event, 'agent', None)
+            agent_id = str(agent.id) if agent and hasattr(agent, 'id') else None
+            agent_role = getattr(agent, 'role', 'Research Agent') if agent else 'Research Agent'
+            
+            # Extract tool input query from tool_args - handle various formats
+            tool_query = "Unknown query"
+            
+            # Handle string representation of JSON
+            if isinstance(event.tool_args, str):
+                try:
+                    # Try to parse as JSON
+                    parsed_args = json.loads(event.tool_args)
+                    if isinstance(parsed_args, dict):
+                        if "query" in parsed_args and isinstance(parsed_args["query"], dict):
+                            tool_query = parsed_args["query"].get("search_query", "Unknown query")
+                        elif "query" in parsed_args:
+                            tool_query = parsed_args.get("query", "Unknown query")
+                    else:
+                        tool_query = event.tool_args
+                except json.JSONDecodeError:
+                    # If not JSON, use as-is
+                    tool_query = event.tool_args
+            elif isinstance(event.tool_args, dict):
+                # Handle nested structure: {"query": {"search_query": "..."}, "num_results": 5}
+                if "query" in event.tool_args and isinstance(event.tool_args["query"], dict):
+                    tool_query = event.tool_args["query"].get("search_query", "Unknown query")
+                # Handle flat structure: {"query": "...", "num_results": 5}
+                elif "query" in event.tool_args:
+                    tool_query = event.tool_args.get("query", "Unknown query")
+            
+            self._emit_event(StreamEvent(
+                type="TOOL_STARTED",
+                data={
+                    "tool_name": event.tool_name,
+                    "tool_query": tool_query,
+                    "agent_role": agent_role,
+                    "message": f"Searching for {tool_query}",
+                    "status": "executing"
+                },
+                timestamp=datetime.now().isoformat(),
+                agent_id=agent_id,
+                session_id=self.session_id
+            ))
+
+        @crewai_event_bus.on(ToolUsageFinishedEvent)
+        def on_tool_usage_finished(source, event: ToolUsageFinishedEvent):
+            """Capture when a tool finishes executing"""
+            agent = getattr(event, 'agent', None)
+            agent_id = str(agent.id) if agent and hasattr(agent, 'id') else None
+            agent_role = getattr(agent, 'role', 'Research Agent') if agent else 'Research Agent'
+            
+            # Extract tool input query - handle various formats
+            tool_query = "Unknown query"
+            
+            # Handle string representation of JSON
+            if isinstance(event.tool_args, str):
+                try:
+                    # Try to parse as JSON
+                    parsed_args = json.loads(event.tool_args)
+                    if isinstance(parsed_args, dict):
+                        if "query" in parsed_args and isinstance(parsed_args["query"], dict):
+                            tool_query = parsed_args["query"].get("search_query", "Unknown query")
+                        elif "query" in parsed_args:
+                            tool_query = parsed_args.get("query", "Unknown query")
+                    else:
+                        tool_query = event.tool_args
+                except json.JSONDecodeError:
+                    # If not JSON, use as-is
+                    tool_query = event.tool_args
+            elif isinstance(event.tool_args, dict):
+                # Handle nested structure: {"query": {"search_query": "..."}, "num_results": 5}
+                if "query" in event.tool_args and isinstance(event.tool_args["query"], dict):
+                    tool_query = event.tool_args["query"].get("search_query", "Unknown query")
+                # Handle flat structure: {"query": "...", "num_results": 5}
+                elif "query" in event.tool_args:
+                    tool_query = event.tool_args.get("query", "Unknown query")
+            
+            # Emit event when tool completes execution
+            # Contains tool details, query info, agent info and completion status 
+            # Includes whether results came from cache
+            #self._emit_event(StreamEvent(
+            #    type="TOOL_COMPLETED",
+            #    data={
+            #        "tool_name": event.tool_name,
+            #        "tool_query": tool_query,
+            #        "agent_role": agent_role,
+            #        "message": f"Found results for: {tool_query}",
+            #        "status": "completed",
+            #        "from_cache": event.from_cache
+            #    },
+            #    timestamp=datetime.now().isoformat(),
+            #    agent_id=agent_id,
+            #    session_id=self.session_id
+            #))
+
+        @crewai_event_bus.on(ToolUsageErrorEvent)
+        def on_tool_usage_error(source, event: ToolUsageErrorEvent):
+            """Capture when a tool encounters an error"""
+            agent = getattr(event, 'agent', None)
+            agent_id = str(agent.id) if agent and hasattr(agent, 'id') else None
+            agent_role = getattr(agent, 'role', 'Research Agent') if agent else 'Research Agent'
+            
+            # Extract tool input query - handle various formats
+            tool_query = "Unknown query"
+            
+            # Handle string representation of JSON
+            if isinstance(event.tool_args, str):
+                try:
+                    # Try to parse as JSON
+                    parsed_args = json.loads(event.tool_args)
+                    if isinstance(parsed_args, dict):
+                        if "query" in parsed_args and isinstance(parsed_args["query"], dict):
+                            tool_query = parsed_args["query"].get("search_query", "Unknown query")
+                        elif "query" in parsed_args:
+                            tool_query = parsed_args.get("query", "Unknown query")
+                    else:
+                        tool_query = event.tool_args
+                except json.JSONDecodeError:
+                    # If not JSON, use as-is
+                    tool_query = event.tool_args
+            elif isinstance(event.tool_args, dict):
+                # Handle nested structure: {"query": {"search_query": "..."}, "num_results": 5}
+                if "query" in event.tool_args and isinstance(event.tool_args["query"], dict):
+                    tool_query = event.tool_args["query"].get("search_query", "Unknown query")
+                # Handle flat structure: {"query": "...", "num_results": 5}
+                elif "query" in event.tool_args:
+                    tool_query = event.tool_args.get("query", "Unknown query")
+            
+            self._emit_event(StreamEvent(
+                type="TOOL_ERROR",
+                data={
+                    "tool_name": event.tool_name,
+                    "tool_query": tool_query,
+                    "agent_role": agent_role,
+                    "message": f"Error searching for {tool_query}",
+                    "status": "error",
+                    "error": str(event.error)
+                },
+                timestamp=datetime.now().isoformat(),
+                agent_id=agent_id,
+                session_id=self.session_id
+            ))
 
 
     def _emit_event(self, event: StreamEvent):

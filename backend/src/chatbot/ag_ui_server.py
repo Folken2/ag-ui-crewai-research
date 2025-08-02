@@ -42,18 +42,21 @@ class ChatbotSession:
 
     def __init__(self):
         self.state = ChatState()
+        self.session_id = None
 
     # ------------------------- Core API ----------------------
     def process_message(self, user_message: str) -> Dict[str, Any]:
         """Process a single user message and return a response payload."""
         
-        # Reset event listener session for new message
-        real_time_listener.reset_session()
+        # Only reset event listener session for new chat sessions, not for each message
+        if not self.session_id:
+            real_time_listener.reset_session()
+            self.session_id = real_time_listener.session_id
         
         self.state.current_input = user_message
 
-        # 1. Detect intent (SEARCH, CHAT, EXIT)
-        intent = detect_intent(user_message)
+        # 1. Detect intent (SEARCH, CHAT, EXIT) and get expanded query
+        intent, expanded_query = detect_intent(user_message, self.state.conversation_history)
         
         # 2. Handle EXIT intent upfront
         if intent == "EXIT":
@@ -66,7 +69,7 @@ class ChatbotSession:
         # 3. Handle SEARCH intent via ResearchCrew
         if intent == "SEARCH":
             try:
-                search_result = ResearchCrew().crew().kickoff(inputs={"query": user_message})
+                search_result = ResearchCrew().crew().kickoff(inputs={"query": expanded_query})
 
                 pyd_res = search_result.pydantic
                 research_results = {
@@ -100,7 +103,7 @@ class ChatbotSession:
             except Exception as e:
                 return {"error": str(e)}
 
-        # 4. Default: regular chat
+        # 4. Default: regular chat with full conversation history
         reply = generate_chat_reply(self.state.conversation_history, user_message)
         self.state.conversation_history.append(
             {"input": user_message, "response": reply, "type": "chat"}
@@ -108,12 +111,21 @@ class ChatbotSession:
 
         return {"intent": "CHAT", "response": reply, "token_usage": 0}
 
+    def start_new_chat(self):
+        """Start a new chat session, clearing all history and state."""
+        self.state = ChatState()
+        self.session_id = None
+        real_time_listener.reset_session()
+
     # ---------------------- Utility helpers ------------------
     def is_session_active(self) -> bool:
         return not self.state.session_ended
 
     def get_conversation_history(self) -> list:
         return self.state.conversation_history
+
+    def get_session_id(self) -> str:
+        return self.session_id or "no-session"
 
 
 # Factory expected by the rest of this module
@@ -311,22 +323,13 @@ class AGUIFlowAdapter:
     def _create_ag_ui_event(self, stream_event: Dict[str, Any]):
         """Convert real-time listener event to AG-UI format"""
         event_type_mapping = {
-            "CREW_STARTED": "EXECUTION_STATUS",
-            "CREW_COMPLETED": "EXECUTION_STATUS", 
             "AGENT_STARTED": "AGENT_STATUS",
             "AGENT_FINISHED": "AGENT_STATUS",
-            "AGENT_COMPLETED": "AGENT_STATUS",
-            "AGENT_ERROR": "AGENT_ERROR",
-            "TASK_STARTED": "TASK_STATUS",
-            "TASK_COMPLETED": "TASK_STATUS", 
+            "AGENT_ERROR": "AGENT_ERROR", 
             "TASK_FAILED": "TASK_ERROR",
             "TOOL_STARTED": "TOOL_USAGE",
             "TOOL_COMPLETED": "TOOL_USAGE",
             "TOOL_ERROR": "TOOL_ERROR",
-            "LLM_STARTED": "LLM_STATUS",
-            "LLM_COMPLETED": "LLM_STATUS",
-            "LLM_ERROR": "LLM_ERROR",
-            "LLM_STREAM_CHUNK": "TEXT_MESSAGE_DELTA"
         }
         
         ag_ui_type = event_type_mapping.get(stream_event["type"], "EXECUTION_STATUS")
@@ -410,10 +413,19 @@ async def get_pending_events():
 
 @app.post("/flow/reset")
 async def reset_flow():
-    """Reset the flow to start fresh"""
-    adapter.flow = create_chatbot()
-    real_time_listener.reset_session()
-    return {"status": "reset", "message": "Flow has been reset"}
+    """Reset the flow and start a new chat session"""
+    adapter.flow.start_new_chat()
+    return {"status": "reset", "message": "New chat session started"}
+
+@app.post("/flow/new-chat")
+async def start_new_chat():
+    """Start a new chat session, clearing all history"""
+    adapter.flow.start_new_chat()
+    return {
+        "status": "new_chat", 
+        "message": "New chat session started",
+        "session_id": adapter.flow.get_session_id()
+    }
 
 if __name__ == "__main__":
     import uvicorn

@@ -4,6 +4,7 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from crewai_tools import SerperDevTool
+from ...tools import ExaSearchTool, ExaAnswerTool
 
 # Import listeners to register event handlers
 from ...listeners import real_time_listener
@@ -13,6 +14,9 @@ from ...listeners import real_time_listener
 # Configure SerperDevTool with both search and news modes for comprehensive results
 serper_search_tool = SerperDevTool(search_type="search")
 serper_news_tool = SerperDevTool(search_type="news")
+# Configure EXA tools for enhanced web search and direct answers
+exa_search_tool = ExaSearchTool()
+exa_answer_tool = ExaAnswerTool()
 
 ## PYDANTIC MODELS
 class SourceInfo(BaseModel):
@@ -42,7 +46,7 @@ class ResearchCrew:
     def researcher_agent(self) -> Agent:
         return Agent(
             config=self.agents_config["researcher_agent"],
-            tools=[serper_news_tool],
+            tools=[exa_search_tool, exa_answer_tool],
             #reasoning=True,
             verbose=True,
             inject_date=True,
