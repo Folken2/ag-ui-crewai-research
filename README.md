@@ -38,7 +38,7 @@ You'll need to obtain these API keys:
 
 ### 1. Clone the Repository
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Folken2/ag-ui-crewai-research.git
 cd crewai_flow
 ```
 
