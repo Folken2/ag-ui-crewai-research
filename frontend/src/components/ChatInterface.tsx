@@ -134,7 +134,21 @@ export function ChatInterface() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [showClearDialog, messages.length, handleNewChat])
 
-  const clearChat = () => {
+  const clearChat = async () => {
+    try {
+      // Call backend to start new chat session
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      await fetch(`${backendUrl}/flow/new-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Error starting new chat session:', error);
+    }
+
+    // Clear frontend state
     setMessages([])
     setIsLoading(false)
     setExecutionEvents([])

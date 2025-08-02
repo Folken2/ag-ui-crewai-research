@@ -8,6 +8,7 @@ interface ExecutionEvent {
     message: string
     agent_role?: string
     tool_name?: string
+    tool_query?: string
     model?: string
     query?: string
     status?: string
@@ -62,62 +63,21 @@ export function ExecutionTracker({ events, isProcessing }: ExecutionTrackerProps
     return null
   }
 
-  const getEventIcon = (type: string) => {
-    switch (type) {
-      case "CREW_STARTED":
-        return "🚀"
-      case "CREW_COMPLETED":
-        return "✅"
-      case "CREW_ERROR":
-        return "❌"
-      case "AGENT_STARTED":
-        return "🤖"
-      case "AGENT_COMPLETED":
-        return "✅"
-      case "AGENT_ERROR":
-        return "❌"
-      case "TOOL_STARTED":
-        return "🔍"
-      case "TOOL_COMPLETED":
-        return "✅"
-      case "TOOL_ERROR":
-        return "❌"
-      case "LLM_STARTED":
-        return "🧠"
-      case "LLM_COMPLETED":
-        return "✅"
-      case "LLM_ERROR":
-        return "❌"
-      case "TASK_STARTED":
-        return "📋"
-      case "TASK_COMPLETED":
-        return "✅"
-      case "TASK_FAILED":
-        return "❌"
-      default:
-        return "⚡"
-    }
-  }
-
-  const getEventColor = (type: string) => {
-    if (type.includes("ERROR") || type.includes("FAILED")) {
-      return "text-red-500 border-red-200 bg-red-50"
-    }
-    if (type.includes("COMPLETED")) {
-      return "text-green-600 border-green-200 bg-green-50"
-    }
-    if (type.includes("STARTED")) {
-      return "text-blue-600 border-blue-200 bg-blue-50 animate-pulse"
-    }
-    return "text-gray-600 border-gray-200 bg-gray-50"
-  }
-
   const formatEventMessage = (event: ExecutionEvent) => {
     const { data } = event
     let message = data.message
 
-    // Add additional context for certain events
-    if (data.tool_name && data.query) {
+    // Handle tool usage events with the specific structure requested
+    if (event.type === "TOOL_STARTED" && data.tool_query) {
+      message = `🌐 Searching for: ${data.tool_query}`
+    } else if (event.type === "TOOL_COMPLETED" && data.tool_query) {
+      message = `Found results for: ${data.tool_query}`
+    } else if (event.type === "TOOL_ERROR" && data.tool_query) {
+      message = `Error searching for: ${data.tool_query}`
+    }
+    
+    // Add additional context for certain events (but not for tool events)
+    if (data.tool_name && data.query && !event.type.startsWith("TOOL_")) {
       message = `${message.split(' with query')[0]} with query: "${data.query}"`
     }
     
@@ -138,17 +98,20 @@ export function ExecutionTracker({ events, isProcessing }: ExecutionTrackerProps
         🔄 Execution Status
       </div>
       
-      <div className="glass-card border border-gray-200 rounded-lg p-4 max-h-48 overflow-y-auto">
+      <div className="glass-card border border-gray-200 rounded-lg p-4 max-h-48 overflow-y-auto bg-gradient-to-br from-white/80 to-gray-50/50 backdrop-blur-sm">
         <div className="space-y-2">
           {visibleEvents.map((event, index) => (
             <div
               key={`${event.type}-${event.timestamp}-${event.agent_id || 'no-agent'}-${index}`}
-              className={`flex items-start space-x-3 p-2 rounded-md border transition-all duration-300 transform ${getEventColor(event.type)} animate-in slide-in-from-left-2`}
-              style={{ animationDelay: `${index * 50}ms` }}
+              className="flex items-start space-x-3 p-2 rounded-md border transition-all duration-500 transform text-gray-600 border-gray-200 bg-gray-50 hover:scale-105"
+              style={{ animationDelay: `${index * 100}ms` }}
             >
-              <span className="text-lg flex-shrink-0 mt-0.5">
-                {getEventIcon(event.type)}
-              </span>
+              {/* Loading spinner for STARTED events */}
+              {event.type.includes("STARTED") && (
+                <div className="flex-shrink-0 mt-0.5 relative">
+                  <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
               
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium break-words">
@@ -186,9 +149,13 @@ export function ExecutionTracker({ events, isProcessing }: ExecutionTrackerProps
           ))}
           
           {isProcessing && (
-            <div className="flex items-center space-x-2 p-2 text-blue-600">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
-              <span className="text-sm font-medium"></span>
+            <div className="flex items-center space-x-3 p-3 text-blue-600 bg-blue-50/50 rounded-md border border-blue-200 animate-pulse">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+              <span className="text-sm font-medium opacity-80">Processing...</span>
             </div>
           )}
         </div>
