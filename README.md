@@ -56,8 +56,8 @@ python -m venv .venv
 # On macOS/Linux:
 source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install the project
+pip install -e
 ```
 
 ### 3. Frontend Setup
