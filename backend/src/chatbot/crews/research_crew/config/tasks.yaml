@@ -43,4 +43,20 @@ research_task:
     - sources should be mapped to the information they provide in the response, when possible.
     - Include image URLs from search results to provide visual context
     - Combine results from both search and news tools for comprehensive coverage
+    
+    IMPORTANT: The sources field must be a list of objects, not strings. Each source object must have:
+    - url: string (required)
+    - title: string (optional)
+    - image_url: string (optional) 
+    - snippet: string (optional)
+    
+    Example format:
+    sources: [
+      {
+        "url": "https://example.com",
+        "title": "Example Title",
+        "image_url": "https://example.com/image.jpg",
+        "snippet": "Brief description"
+      }
+    ]
   agent: researcher_agent

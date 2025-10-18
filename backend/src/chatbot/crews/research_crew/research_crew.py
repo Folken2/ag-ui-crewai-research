@@ -49,14 +49,16 @@ llm = get_openrouter_llm()
 ## PYDANTIC MODELS
 class SourceInfo(BaseModel):
     url: str = Field(description="The source URL")
-    title: Optional[str] = Field(description="The title of the source")
-    image_url: Optional[str] = Field(description="Image URL associated with the source")
-    snippet: Optional[str] = Field(description="Brief snippet or description")
+    title: Optional[str] = Field(default=None, description="The title of the source")
+    image_url: Optional[str] = Field(default=None, description="Image URL associated with the source")
+    snippet: Optional[str] = Field(default=None, description="Brief snippet or description")
 
 class ResearchResult(BaseModel):
-    summary: Optional[str] = Field(description="A concise summary of the research result")
-    sources: Optional[List[SourceInfo]] = Field(description="A list of sources with metadata including images")
-    citations: Optional[List[str]] = Field(description="A list of citations for the sources used")
+    summary: Optional[str] = Field(default=None, description="A concise summary of the research result")
+    sources: Optional[List[SourceInfo]] = Field(default=None, description="A list of sources with metadata including images")
+    citations: Optional[List[str]] = Field(default=None, description="A list of citations for the sources used")
+    
+   
     
    
 @CrewBase
