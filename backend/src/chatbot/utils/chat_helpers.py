@@ -1,7 +1,18 @@
 from typing import List, Dict, Any, Tuple
 from litellm import completion
+from decouple import config
+import os
 
 from .prompts import UNIFIED_PROMPT, inject_current_time
+
+# OpenRouter configuration
+OPENROUTER_API_KEY = config("OPENROUTER_API_KEY", default="")
+OPENROUTER_MODEL = config("OPENROUTER_MODEL", default="openai/gpt-4o-mini")
+OPENROUTER_BASE_URL = config("OPENROUTER_BASE_URL", default="https://openrouter.ai/api/v1")
+
+# Set OpenRouter API key for LiteLLM
+if OPENROUTER_API_KEY:
+    os.environ["OPENROUTER_API_KEY"] = OPENROUTER_API_KEY
 
 
 def detect_intent(text: str, history: List[Dict[str, str]] = None) -> Tuple[str, str]:
@@ -28,7 +39,7 @@ def detect_intent(text: str, history: List[Dict[str, str]] = None) -> Tuple[str,
         print(f"Context: {context[:200]}...")
         
         resp = completion(
-            model="gemini/gemini-2.0-flash",
+            model=f"openrouter/{OPENROUTER_MODEL}",
             messages=[
                 {"role": "system", "content": inject_current_time(UNIFIED_PROMPT)},
                 {"role": "user", "content": f"{context}\n\nUser's current message: {text}"},
@@ -117,7 +128,7 @@ Please provide a comprehensive, warm, and helpful answer based on this research 
     
     try:
         resp = completion(
-            model="gemini/gemini-2.0-flash",
+            model=f"openrouter/{OPENROUTER_MODEL}",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"{research_context}\n\nBased on the research above, provide a comprehensive answer to the user's question. Be warm, helpful, and format the response clearly."},
@@ -162,7 +173,7 @@ def generate_chat_reply(history: List[Dict[str, str]], user_input: str) -> str:
     
     try:
         resp = completion(
-            model="gemini/gemini-2.0-flash",
+            model=f"openrouter/{OPENROUTER_MODEL}",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"{context}\n\nUser's current message: {user_input}"},
@@ -209,7 +220,7 @@ def unified_llm_call(conversation_history: List[Dict[str, str]], user_input: str
     
     try:
         resp = completion(
-            model="gemini/gemini-2.0-flash",
+            model=f"openrouter/{OPENROUTER_MODEL}",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"{context}\n\nUser's current message: {user_input}"},

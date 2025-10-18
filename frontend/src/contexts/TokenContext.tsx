@@ -16,7 +16,9 @@ export function TokenProvider({ children }: { children: ReactNode }) {
 
   const refreshToken = async () => {
     try {
+      // Use environment variable for backend URL
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+      
       const response = await fetch(`${backendUrl}/token`, {
         method: 'POST',
         headers: {
