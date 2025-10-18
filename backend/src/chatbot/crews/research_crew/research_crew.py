@@ -40,7 +40,6 @@ def get_openrouter_llm():
         api_key=api_key,
         base_url=base_url,
         temperature=0.1,
-        max_tokens=4000,
     )
 
 # Initialize the LLM

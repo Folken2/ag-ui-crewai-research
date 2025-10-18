@@ -62,10 +62,6 @@ class ExaSearchTool(BaseTool):
             
             formatted_results = []
             for i, result in enumerate(search_response.results, 1):
-                # Debug: Check what type of object we're dealing with
-                print(f"DEBUG: Result {i} type: {type(result)}")
-                print(f"DEBUG: Result {i} content: {result}")
-                
                 # Handle case where result might be a string or different object type
                 if isinstance(result, str):
                     # If result is a string, treat it as a URL
