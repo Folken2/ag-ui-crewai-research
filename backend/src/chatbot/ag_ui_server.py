@@ -8,14 +8,26 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from typing import Dict, Any, AsyncGenerator
 import json
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
+
+# Import authentication
+from .auth import (
+    authenticate_user, 
+    create_access_token, 
+    get_current_active_user, 
+    User, 
+    Token,
+    fake_users_db,
+    ACCESS_TOKEN_EXPIRE_MINUTES
+)
 
 # Import listeners to register them with the event bus
 from .listeners.real_time_listener import real_time_listener
@@ -368,8 +380,29 @@ class AGUIFlowAdapter:
 # Global adapter
 adapter = AGUIFlowAdapter()
 
+# Authentication endpoints
+@app.post("/token", response_model=Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    """Login endpoint to get access token - creates permanent token for Railway deployment"""
+    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Create permanent token (no expiration)
+    access_token = create_access_token(data={"sub": user.username}, expires_delta=None)
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/users/me", response_model=User)
+async def read_users_me(current_user: User = Depends(get_current_active_user)):
+    """Get current user information"""
+    return current_user
+
 @app.post("/agent")
-async def agent_endpoint(request: Dict[str, Any]):
+async def agent_endpoint(request: Dict[str, Any], current_user: User = Depends(get_current_active_user)):
     """Main AG-UI endpoint with real-time event streaming"""
     
     messages = request.get("messages", [])
@@ -395,7 +428,7 @@ async def health():
     return {"status": "ok"}
 
 @app.get("/flow/status")
-async def flow_status():
+async def flow_status(current_user: User = Depends(get_current_active_user)):
     """Get current flow status including real-time event statistics"""
     return {
         "session_active": adapter.flow.is_session_active(),
@@ -404,7 +437,7 @@ async def flow_status():
     }
 
 @app.get("/flow/events")
-async def get_pending_events():
+async def get_pending_events(current_user: User = Depends(get_current_active_user)):
     """Get any pending real-time events"""
     return {
         "events": real_time_listener.get_events_realtime(),
@@ -412,13 +445,13 @@ async def get_pending_events():
     }
 
 @app.post("/flow/reset")
-async def reset_flow():
+async def reset_flow(current_user: User = Depends(get_current_active_user)):
     """Reset the flow and start a new chat session"""
     adapter.flow.start_new_chat()
     return {"status": "reset", "message": "New chat session started"}
 
 @app.post("/flow/new-chat")
-async def start_new_chat():
+async def start_new_chat(current_user: User = Depends(get_current_active_user)):
     """Start a new chat session, clearing all history"""
     adapter.flow.start_new_chat()
     return {

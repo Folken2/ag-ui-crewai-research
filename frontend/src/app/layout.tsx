@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { TokenProvider } from "../contexts/TokenContext";
 import "./globals.css";
 
 const inter = Inter({ 
@@ -45,9 +46,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </head>
       <body className={`${inter.className} antialiased min-h-screen`}>
-        <div className="relative">
-          {children}
-        </div>
+        <TokenProvider>
+          <div className="relative">
+            {children}
+          </div>
+        </TokenProvider>
         <Analytics />
       </body>
     </html>

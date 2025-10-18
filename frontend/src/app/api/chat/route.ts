@@ -7,12 +7,23 @@ export async function POST(request: NextRequest) {
     // Get backend URL from environment or use localhost for development
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     
+    // Get authorization header from the request
+    const authHeader = request.headers.get('authorization');
+    
+    // Prepare headers for backend request
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Add authorization header if present
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+    
     // Forward the request to the backend
     const response = await fetch(`${backendUrl}/agent`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(body),
     });
 

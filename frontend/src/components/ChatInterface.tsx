@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
+import { useToken } from '../contexts/TokenContext'
 
 interface Source {
   url: string
@@ -87,6 +88,7 @@ const extractDomain = (url: string) => {
 
 
 export function ChatInterface() {
+  const { token } = useToken()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false);
@@ -138,11 +140,17 @@ export function ChatInterface() {
     try {
       // Call backend to start new chat session
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       await fetch(`${backendUrl}/flow/new-chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
     } catch (error) {
       console.error('Error starting new chat session:', error);
@@ -259,9 +267,15 @@ export function ChatInterface() {
     setEventMessages([]); // Clear any previous event messages
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ messages: [
           ...messages.map(m => ({ role: m.role, content: m.content })),
           { role: 'user', content: userMessage }
@@ -354,19 +368,23 @@ export function ChatInterface() {
             </div>
           </div>
 
-          {/* New Chat Button - Only show when there are messages */}
-          {messages.length > 0 && (
-            <button
-              onClick={handleNewChat}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-500 text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105"
-              title="Start a new conversation (Ctrl+N)"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <span>New Chat</span>
-            </button>
-          )}
+          {/* Action Buttons */}
+          <div className="flex items-center space-x-3">
+            {/* New Chat Button - Only show when there are messages */}
+            {messages.length > 0 && (
+              <button
+                onClick={handleNewChat}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-500 text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105"
+                title="Start a new conversation (Ctrl+N)"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>New Chat</span>
+              </button>
+            )}
+            
+          </div>
         </div>
       </header>
 

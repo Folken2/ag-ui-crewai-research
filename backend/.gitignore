@@ -3,3 +3,7 @@ __pycache__/
 lib/
 .DS_Store
 .venv/
+venv/
+generate_example_credentials.py
+generate_production_credentials.py
+generate_secret.py
