@@ -32,8 +32,11 @@ def get_openrouter_llm():
     if not api_key:
         raise ValueError("OPENROUTER_API_KEY environment variable is required")
     
+    # Add openrouter/ prefix for LiteLLM compatibility
+    litemllm_model = f"openrouter/{model}"
+    
     return ChatOpenAI(
-        model=model,
+        model=litemllm_model,
         api_key=api_key,
         base_url=base_url,
         temperature=0.1,
