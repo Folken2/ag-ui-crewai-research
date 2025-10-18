@@ -5,6 +5,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from crewai_tools import SerperDevTool
 from ...tools import ExaSearchTool, ExaAnswerTool
+from langchain_openai import ChatOpenAI
+from decouple import config
+import os
 
 # Import listeners to register event handlers
 from ...listeners import real_time_listener
@@ -17,6 +20,28 @@ serper_news_tool = SerperDevTool(search_type="news")
 # Configure EXA tools for enhanced web search and direct answers
 exa_search_tool = ExaSearchTool()
 exa_answer_tool = ExaAnswerTool()
+
+## LLM CONFIGURATION
+# Configure OpenRouter LLM
+def get_openrouter_llm():
+    """Get OpenRouter LLM configuration"""
+    api_key = config("OPENROUTER_API_KEY", default="")
+    model = config("OPENROUTER_MODEL", default="openai/gpt-4o-mini")
+    base_url = config("OPENROUTER_BASE_URL", default="https://openrouter.ai/api/v1")
+    
+    if not api_key:
+        raise ValueError("OPENROUTER_API_KEY environment variable is required")
+    
+    return ChatOpenAI(
+        model=model,
+        api_key=api_key,
+        base_url=base_url,
+        temperature=0.1,
+        max_tokens=4000,
+    )
+
+# Initialize the LLM
+llm = get_openrouter_llm()
 
 ## PYDANTIC MODELS
 class SourceInfo(BaseModel):
@@ -47,7 +72,7 @@ class ResearchCrew:
         return Agent(
             config=self.agents_config["researcher_agent"],
             tools=[exa_search_tool, exa_answer_tool],
-            #reasoning=True,
+            llm=llm,  # Use OpenRouter LLM
             verbose=True,
             inject_date=True,
         )
@@ -67,5 +92,6 @@ class ResearchCrew:
             tasks=self.tasks,
             process=Process.sequential,
             verbose=True,
-            usage_metrics={}            
+            usage_metrics={},
+            llm=llm  # Use OpenRouter LLM for the crew
         )

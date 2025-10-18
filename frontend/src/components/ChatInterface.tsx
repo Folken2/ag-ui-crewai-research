@@ -83,10 +83,6 @@ const extractDomain = (url: string) => {
   }
 }
 
-
-
-
-
 export function ChatInterface() {
   const { token } = useToken()
   const [messages, setMessages] = useState<Message[]>([])
