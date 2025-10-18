@@ -149,7 +149,7 @@ app = FastAPI()
 # Add CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],  # Allow all origins for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -379,6 +379,27 @@ class AGUIFlowAdapter:
 
 # Global adapter
 adapter = AGUIFlowAdapter()
+
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "message": "AG-UI CrewAI Research Assistant API",
+        "version": "1.0.0",
+        "status": "running",
+        "endpoints": {
+            "health": "/health",
+            "token": "/token",
+            "agent": "/agent",
+            "docs": "/docs"
+        }
+    }
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "message": "Server is running"}
 
 # Authentication endpoints
 @app.post("/token", response_model=Token)

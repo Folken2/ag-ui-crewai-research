@@ -17,7 +17,9 @@ export function TokenProvider({ children }: { children: ReactNode }) {
   const refreshToken = async () => {
     try {
       // Use environment variable for backend URL
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+      let backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+      // Remove trailing slash to prevent double slashes
+      backendUrl = backendUrl.replace(/\/$/, '')
       
       const response = await fetch(`${backendUrl}/token`, {
         method: 'POST',
@@ -56,7 +58,10 @@ export function TokenProvider({ children }: { children: ReactNode }) {
       if (storedToken) {
         // Verify token is still valid
         try {
-          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+          let backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+          // Remove trailing slash to prevent double slashes
+          backendUrl = backendUrl.replace(/\/$/, '')
+          
           const response = await fetch(`${backendUrl}/users/me`, {
             headers: {
               'Authorization': `Bearer ${storedToken}`,
