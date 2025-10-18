@@ -88,7 +88,7 @@ const extractDomain = (url: string) => {
 
 
 export function ChatInterface() {
-  const { token, isLoading: tokenLoading } = useToken()
+  const { token } = useToken()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false);
@@ -138,17 +138,15 @@ export function ChatInterface() {
 
   const clearChat = async () => {
     try {
-      if (!token) {
-        console.error('No token available for clear chat');
-        return;
-      }
-
       // Call backend to start new chat session
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       
       await fetch(`${backendUrl}/flow/new-chat`, {
         method: 'POST',
@@ -255,7 +253,7 @@ export function ChatInterface() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || tokenLoading) return;
+    if (!input.trim()) return;
 
     const userMessage = input.trim();
     setInput('');
@@ -269,14 +267,11 @@ export function ChatInterface() {
     setEventMessages([]); // Clear any previous event messages
 
     try {
-      if (!token) {
-        console.error('No token available for request');
-        setIsLoading(false);
-        return;
-      }
-
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      headers['Authorization'] = `Bearer ${token}`;
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -351,18 +346,6 @@ export function ChatInterface() {
 
   const handleQuickAction = (text: string) => {
     sendMessage(text)
-  }
-
-  // Show loading state if token is still loading
-  if (tokenLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="flex items-center space-x-3">
-          <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-foreground font-medium">Initializing...</span>
-        </div>
-      </div>
-    );
   }
 
   return (
