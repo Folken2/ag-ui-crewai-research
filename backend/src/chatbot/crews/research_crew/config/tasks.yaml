@@ -44,19 +44,30 @@ research_task:
     - Include image URLs from search results to provide visual context
     - Combine results from both search and news tools for comprehensive coverage
     
-    IMPORTANT: The sources field must be a list of objects, not strings. Each source object must have:
-    - url: string (required)
-    - title: string (optional)
-    - image_url: string (optional) 
-    - snippet: string (optional)
+    CRITICAL: You MUST return sources as a JSON array of objects, NOT as strings.
     
-    Example format:
+    WRONG FORMAT (will cause errors):
+    sources: ["https://example.com", "https://another.com"]
+    
+    CORRECT FORMAT:
     sources: [
       {
         "url": "https://example.com",
         "title": "Example Title",
-        "image_url": "https://example.com/image.jpg",
+        "image_url": "https://example.com/image.jpg", 
         "snippet": "Brief description"
+      },
+      {
+        "url": "https://another.com",
+        "title": "Another Title",
+        "image_url": null,
+        "snippet": "Another description"
       }
     ]
+    
+    Each source MUST be an object with these exact fields:
+    - url (required): the source URL
+    - title (optional): the source title
+    - image_url (optional): image URL if available
+    - snippet (optional): brief description
   agent: researcher_agent

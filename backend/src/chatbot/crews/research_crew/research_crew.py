@@ -2,7 +2,7 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Union
 from crewai_tools import SerperDevTool
 from ...tools import ExaSearchTool, ExaAnswerTool
 from langchain_openai import ChatOpenAI
@@ -55,7 +55,7 @@ class SourceInfo(BaseModel):
 
 class ResearchResult(BaseModel):
     summary: Optional[str] = Field(default=None, description="A concise summary of the research result")
-    sources: Optional[List[SourceInfo]] = Field(default=None, description="A list of sources with metadata including images")
+    sources: Optional[List[Union[SourceInfo, str]]] = Field(default=None, description="A list of sources with metadata including images")
     citations: Optional[List[str]] = Field(default=None, description="A list of citations for the sources used")
     
    
