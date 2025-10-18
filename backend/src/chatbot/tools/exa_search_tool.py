@@ -62,20 +62,34 @@ class ExaSearchTool(BaseTool):
             
             formatted_results = []
             for i, result in enumerate(search_response.results, 1):
-                # Get the best snippet from highlights or text
-                snippet = "No snippet available"
-                if hasattr(result, 'highlights') and result.highlights:
-                    snippet = result.highlights[0]  # Use first highlight
-                elif hasattr(result, 'text') and result.text:
-                    snippet = result.text[:300] + "..." if len(result.text) > 300 else result.text
+                # Debug: Check what type of object we're dealing with
+                print(f"DEBUG: Result {i} type: {type(result)}")
+                print(f"DEBUG: Result {i} content: {result}")
                 
-                # Format as SourceInfo structure
-                source_info = {
-                    "url": result.url,
-                    "title": result.title,
-                    "image_url": result.image if hasattr(result, 'image') else None,  # EXA provides image URLs
-                    "snippet": snippet
-                }
+                # Handle case where result might be a string or different object type
+                if isinstance(result, str):
+                    # If result is a string, treat it as a URL
+                    source_info = {
+                        "url": result,
+                        "title": "No title available",
+                        "image_url": None,
+                        "snippet": "No snippet available"
+                    }
+                else:
+                    # Get the best snippet from highlights or text
+                    snippet = "No snippet available"
+                    if hasattr(result, 'highlights') and result.highlights:
+                        snippet = result.highlights[0]  # Use first highlight
+                    elif hasattr(result, 'text') and result.text:
+                        snippet = result.text[:300] + "..." if len(result.text) > 300 else result.text
+                    
+                    # Format as SourceInfo structure
+                    source_info = {
+                        "url": getattr(result, 'url', 'No URL available'),
+                        "title": getattr(result, 'title', 'No title available'),
+                        "image_url": getattr(result, 'image', None),  # EXA provides image URLs
+                        "snippet": snippet
+                    }
                 
                 formatted_results.append(
                     f"{i}. SourceInfo:\n"
