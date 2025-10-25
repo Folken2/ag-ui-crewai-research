@@ -211,7 +211,7 @@ class AGUIFlowAdapter:
         """Simple emphasis for key terms - kept for compatibility"""
         return text
 
-    async def process_message(self, user_message: str):
+    async def process_message(self, user_message: str, conversation_history: List[Dict[str, str]] = None):
         """Process message through our unified chatbot flow and emit real-time events"""
         
         # Start event
@@ -224,7 +224,7 @@ class AGUIFlowAdapter:
         real_time_listener.reset_session()
         
         # Start the flow execution in a separate task
-        flow_task = asyncio.create_task(self._run_flow_message(user_message))
+        flow_task = asyncio.create_task(self._run_flow_message(user_message, conversation_history))
         
         # Track processed events to avoid duplicates
         processed_events = set()
@@ -316,12 +316,12 @@ class AGUIFlowAdapter:
             "status": "complete"
         })
     
-    async def _run_flow_message(self, user_message: str):
+    async def _run_flow_message(self, user_message: str, conversation_history: List[Dict[str, str]] = None):
         """Run the flow message processing in executor"""
         def process_flow():
             try:
                 # Use our simplified flow's process_message method
-                return self.flow.process_message(user_message)
+                return self.flow.process_message(user_message, conversation_history)
             except Exception as e:
                 return {"error": str(e)}
         
