@@ -1,73 +1,100 @@
 research_task:
   description: >
-    Research and provide comprehensive information about the user's query: {query}.
-    You have access to TWO different tools - choose the most appropriate one:
-
-    **ExaAnswerTool (exa_answer)**: Use for specific, factual questions that need quick, direct answers.
-    - Best for: "What is the capital of France?", "What is the latest SpaceX valuation?", "Who won the last World Cup?"
-    - Returns: Direct answer with citations
-    - Parameter: Use "query": "your question" when calling the tool
-
-    **ExaSearchTool (exa_web_search)**: Use for complex research, open-ended questions, or when you need multiple sources.
-    - Best for: "What is the state of AI in healthcare?", "How to cook eggs in air fryer?", "Latest developments in renewable energy"
-    - Returns: Multiple search results with detailed content
-    - Parameter: Use "query": "your search terms" when calling the tool
-
-    IMPORTANT: be fast! Users expect a professional response as fast as possible.
+    Research the user's query: {query}
     
-    Choose the tool based on the query type:
-    - Simple factual questions → Use ExaAnswerTool
-    - Complex research topics → Use ExaSearchTool
-    - When in doubt, use ExaSearchTool for comprehensive coverage
+    ## Step 1: Choose the Right Tool
     
-    Analyze the results and synthesize the findings into a clear, well-structured response.
-    Include relevant citations and sources when available.
+    **ExaAnswerTool (exa_answer)**: For specific, factual questions
+    - Example: "What is the capital of France?", "Who won the last World Cup?"
+    - Returns: Direct answer with citations (formatted text)
     
-    IMPORTANT: When creating your sources, extract image URLs from the raw search data.
-    The news results especially contain imageUrl fields that you should include in your SourceInfo objects.
+    **ExaSearchTool (exa_web_search)**: For complex research or open-ended questions
+    - Example: "Latest AI developments", "How to cook eggs in air fryer?"
+    - Returns: JSON string with search results already formatted as SourceInfo objects
     
-    For each source, make sure to include:
-    - url: the source URL
-    - title: the source title  
-    - image_url: extract from imageUrl field in search results (if available)
-    - snippet: the source snippet
+    When in doubt, use ExaSearchTool for comprehensive coverage.
     
-    Look for imageUrl fields in the organic search results, knowledge graph, and news results.
-    News results are particularly good for finding images.
+    ## Step 2: Parse the Tool Results
+    
+    **ExaSearchTool returns JSON** in this format:
+    ```json
+    {
+      "query": "...",
+      "num_results": 5,
+      "results": [
+        {
+          "url": "https://...",
+          "title": "...",
+          "image_url": null,
+          "snippet": "..."
+        }
+      ]
+    }
+    ```
+    
+    The "results" array is already in SourceInfo format - you can use it directly!
+    Extract the key information from snippets to write your summary.
+    
+    ## Step 3: Create Your Output
+    
+    Write a 2-3 paragraph summary based on the search result snippets.
+    Use the "results" array from the tool output as your "sources" field.
+    DO NOT write explanatory text, thoughts, or meta-commentary.
   expected_output: >
-    A comprehensive, well-structured answer that addresses the user's query with:
-    - Clear and accurate information
-    - Current data and insights
-    - Relevant sources with metadata (URL, title, image URL, snippet)
-    - Organized presentation of findings
-    - sources should be mapped to the information they provide in the response, when possible.
-    - Include image URLs from search results to provide visual context
-    - Combine results from both search and news tools for comprehensive coverage
+    A ResearchResult object with three fields: summary, sources, and citations.
     
-    CRITICAL: You MUST return sources as a JSON array of objects, NOT as strings.
+    CRITICAL OUTPUT FORMAT RULES:
     
-    WRONG FORMAT (will cause errors):
-    sources: ["https://example.com", "https://another.com"]
+    1. DO NOT include your thinking process, reasoning, or explanations
+    2. DO NOT write "Thought:" or "I will..." statements
+    3. DO NOT write narrative text before the JSON structure
+    4. Return ONLY the structured data in the correct format
     
-    CORRECT FORMAT:
+    ## Field Requirements:
+    
+    **summary** (string): 
+    A concise 2-3 paragraph summary of the key findings from search results.
+    Write clear, factual sentences. No meta-commentary.
+    
+    **sources** (array of objects):
+    Extract 5-8 most relevant sources from search results.
+    Each source MUST be an object with ALL four fields:
+    
+    ```
+    {
+      "url": "https://example.com",           # required: source URL
+      "title": "Article Title",                # required: use "Unknown" if missing
+      "image_url": null,                       # required: use null if no image
+      "snippet": "Brief description..."        # required: use "" if no snippet
+    }
+    ```
+    
+    CRITICAL: Every source object MUST have all 4 fields. Use null or "" for missing data.
+    
+    **citations** (array of strings):
+    List of source URLs that were directly cited in the summary.
+    Example: ["https://example.com", "https://another.com"]
+    
+    ## What Good Output Looks Like:
+    
+    summary: "Microsoft announced Copilot Mode for Edge browser on October 24, 2025. The feature includes autonomous actions..."
+    
     sources: [
       {
-        "url": "https://example.com",
-        "title": "Example Title",
-        "image_url": "https://example.com/image.jpg", 
-        "snippet": "Brief description"
-      },
-      {
-        "url": "https://another.com",
-        "title": "Another Title",
+        "url": "https://daily-ai.info/",
+        "title": "Daily AI Insight",
         "image_url": null,
-        "snippet": "Another description"
+        "snippet": "Microsoft launches Copilot Mode in Edge..."
       }
     ]
     
-    Each source MUST be an object with these exact fields:
-    - url (required): the source URL
-    - title (optional): the source title
-    - image_url (optional): image URL if available
-    - snippet (optional): brief description
+    citations: ["https://daily-ai.info/"]
+    
+    ## What BAD Output Looks Like (DO NOT DO THIS):
+    
+    ❌ "Thought: I will now synthesize..."
+    ❌ "Based on the search results, I found..."
+    ❌ Writing explanation before the data structure
+    ❌ Missing fields in source objects
+    ❌ Empty image_url fields without null value
   agent: researcher_agent

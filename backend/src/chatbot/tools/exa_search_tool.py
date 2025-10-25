@@ -1,4 +1,5 @@
 import os
+import json
 from typing import Type, List, Optional
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -32,7 +33,7 @@ class ExaSearchTool(BaseTool):
             num_results: Number of results to return (max 10)
             
         Returns:
-            Formatted search results as a string matching SourceInfo model structure
+            JSON string containing search results in SourceInfo format for easy parsing
         """
         try:
             # Limit results to 10 for API efficiency
@@ -43,7 +44,7 @@ class ExaSearchTool(BaseTool):
                 query=query,
                 num_results=num_results,
                 use_autoprompt=True,  # Use EXA's autoprompt for better results
-                type="auto",  # Use auto search type as requested - automatically chooses between keyword and neural
+                type="auto",  # Use auto search type - automatically chooses between keyword and neural
                 # Extract content with highlights and summaries
                 text=True,  # Get full page text
                 highlights={
@@ -58,44 +59,66 @@ class ExaSearchTool(BaseTool):
             
             # Format results to match SourceInfo model structure
             if not search_response.results:
-                return f"No search results found for query: '{query}'"
+                return json.dumps({
+                    "query": query,
+                    "results": [],
+                    "message": "No search results found"
+                })
             
-            formatted_results = []
-            for i, result in enumerate(search_response.results, 1):
+            # Build structured results array
+            structured_results = []
+            for result in search_response.results:
                 # Handle case where result might be a string or different object type
                 if isinstance(result, str):
                     # If result is a string, treat it as a URL
                     source_info = {
                         "url": result,
-                        "title": "No title available",
+                        "title": "Unknown",
                         "image_url": None,
-                        "snippet": "No snippet available"
+                        "snippet": ""
                     }
                 else:
-                    # Get the best snippet from highlights or text
-                    snippet = "No snippet available"
-                    if hasattr(result, 'highlights') and result.highlights:
+                    # Get the best snippet from highlights, summary, or text
+                    snippet = ""
+                    if hasattr(result, 'summary') and result.summary:
+                        snippet = result.summary[:300]
+                    elif hasattr(result, 'highlights') and result.highlights:
                         snippet = result.highlights[0]  # Use first highlight
                     elif hasattr(result, 'text') and result.text:
-                        snippet = result.text[:300] + "..." if len(result.text) > 300 else result.text
+                        snippet = result.text[:300]
                     
-                    # Format as SourceInfo structure
+                    # Add ellipsis if truncated
+                    if snippet and len(snippet) >= 300:
+                        snippet = snippet + "..."
+                    
+                    # Try different possible attribute names for image
+                    image_url = None
+                    for attr in ['image', 'image_url', 'thumbnail', 'imageUrl']:
+                        if hasattr(result, attr):
+                            image_url = getattr(result, attr)
+                            if image_url:  # Stop at first non-null value
+                                break
+                    
+                    # Format as SourceInfo structure with all required fields
                     source_info = {
-                        "url": getattr(result, 'url', 'No URL available'),
-                        "title": getattr(result, 'title', 'No title available'),
-                        "image_url": getattr(result, 'image', None),  # EXA provides image URLs
-                        "snippet": snippet
+                        "url": getattr(result, 'url', ''),
+                        "title": getattr(result, 'title', 'Unknown'),
+                        "image_url": image_url,  # Will be None if no image found
+                        "snippet": snippet if snippet else ""
                     }
                 
-                formatted_results.append(
-                    f"{i}. SourceInfo:\n"
-                    f"   url: {source_info['url']}\n"
-                    f"   title: {source_info['title']}\n"
-                    f"   image_url: {source_info['image_url'] or 'None'}\n"
-                    f"   snippet: {source_info['snippet']}\n"
-                )
+                structured_results.append(source_info)
             
-            return f"Search results for '{query}':\n\n" + "\n".join(formatted_results)
+            # Return as JSON string for easy parsing by the agent
+            return json.dumps({
+                "query": query,
+                "num_results": len(structured_results),
+                "results": structured_results
+            }, indent=2)
             
         except Exception as e:
-            return f"Error performing web search: {str(e)}"
+            return json.dumps({
+                "query": query,
+                "error": str(e),
+                "results": []
+            })
