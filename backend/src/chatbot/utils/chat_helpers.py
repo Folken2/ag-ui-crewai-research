@@ -45,7 +45,6 @@ def detect_intent(text: str, history: List[Dict[str, str]] = None) -> Tuple[str,
                 {"role": "user", "content": f"{context}\n\nUser's current message: {text}"},
             ],
             temperature=0.5,
-            max_tokens=100,
         )
         content = resp.choices[0].message.content.strip()
         
@@ -134,7 +133,6 @@ Please provide a comprehensive, warm, and helpful answer based on this research 
                 {"role": "user", "content": f"{research_context}\n\nBased on the research above, provide a comprehensive answer to the user's question. Be warm, helpful, and format the response clearly."},
             ],
             temperature=temperature,
-            max_tokens=800,
         )
         
         content = resp.choices[0].message.content.strip()
