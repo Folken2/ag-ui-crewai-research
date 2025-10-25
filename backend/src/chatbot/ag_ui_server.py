@@ -57,7 +57,7 @@ class ChatbotSession:
         self.session_id = None
 
     # ------------------------- Core API ----------------------
-    def process_message(self, user_message: str) -> Dict[str, Any]:
+    def process_message(self, user_message: str, conversation_history: List[Dict[str, str]] = None) -> Dict[str, Any]:
         """Process a single user message and return a response payload."""
         
         # Only reset event listener session for new chat sessions, not for each message
@@ -66,6 +66,10 @@ class ChatbotSession:
             self.session_id = real_time_listener.session_id
         
         self.state.current_input = user_message
+
+        # Initialize conversation history if provided (from frontend)
+        if conversation_history is not None:
+            self.state.conversation_history = conversation_history
 
         # 1. Detect intent (SEARCH, CHAT, EXIT) and get expanded query
         intent, expanded_query = detect_intent(user_message, self.state.conversation_history)
@@ -434,8 +438,22 @@ async def agent_endpoint(request: Dict[str, Any], current_user: User = Depends(g
     if not user_message:
         return {"error": "Empty message"}
     
+    # Convert frontend conversation history to backend format
+    conversation_history = []
+    for msg in messages[:-1]:  # All messages except the current one
+        if msg.get("role") == "user":
+            conversation_history.append({
+                "input": msg.get("content", ""),
+                "response": "",  # Will be filled by next assistant message
+                "type": "chat"
+            })
+        elif msg.get("role") == "assistant":
+            # Update the last conversation turn with the assistant's response
+            if conversation_history:
+                conversation_history[-1]["response"] = msg.get("content", "")
+
     async def event_stream():
-        async for event in adapter.process_message(user_message):
+        async for event in adapter.process_message(user_message, conversation_history):
             yield f"data: {json.dumps(event)}\n\n"
         yield "data: [DONE]\n\n"
     
